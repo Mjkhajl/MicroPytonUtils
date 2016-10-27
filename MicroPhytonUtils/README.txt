@@ -19,7 +19,7 @@ Current features:
     
 Usage: 
 
-  ther is no main at the moment... ESP8266FileSystemSynchronizer is the main implementation, use the following method: 
+  ther is no main at the moment... FileSystemSynchronizerESP8266 is the main implementation, use the following method: 
   
     void synchronizeFs( File srcDir, String dest ) throws Exception ;
     
