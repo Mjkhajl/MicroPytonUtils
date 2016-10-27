@@ -4,6 +4,7 @@ import java.util.Arrays;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
+import java.util.TreeSet;
 
 public abstract class FileSystemSynchronizerAbstract implements FileSystemSynchronizer {
 	
@@ -17,8 +18,8 @@ public abstract class FileSystemSynchronizerAbstract implements FileSystemSynchr
 	@Override
 	public void synchronizeFs(File srcDir, String dest) throws Exception {
 		
-		this.srcEntries = new HashSet<String>();
-		this.destEntries = new HashSet<String>();
+		this.srcEntries = new TreeSet<String>();
+		this.destEntries = new TreeSet<String>();
 		
 		process( srcDir.getCanonicalPath(), Nature.LOCAL );
 		process( dest, Nature.REMOTE );

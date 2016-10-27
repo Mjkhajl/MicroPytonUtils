@@ -10,7 +10,7 @@ import java.util.regex.Pattern;
 
 import javax.comm.SerialPort;
 
-public class F8266FileSystemSynchronizer extends FileSystemSynchronizerAbstract {
+public class FileSystemSynchronizerESP8266 extends FileSystemSynchronizerAbstract {
 
 	private static final int COMM_TIMEOUT = 100;
 	private static final int BPS_SPEED = 115200;
@@ -19,7 +19,7 @@ public class F8266FileSystemSynchronizer extends FileSystemSynchronizerAbstract 
 	private static SerialReplHelper repl = new SerialReplHelper(COMM_TIMEOUT, BPS_SPEED, SerialPort.DATABITS_8,
 			SerialPort.STOPBITS_1, SerialPort.PARITY_NONE);
 
-	public F8266FileSystemSynchronizer() throws Throwable {
+	public FileSystemSynchronizerESP8266() throws Throwable {
 		super();
 
 		repl.connectToFirstAvailable();
@@ -134,7 +134,7 @@ public class F8266FileSystemSynchronizer extends FileSystemSynchronizerAbstract 
 			
 		} finally{
 			
-			finStream.close();
+			CodeUtils.close( finStream );
 			
 			// free objects and collect garbage...
 			repl.sendCommand( "file.close()"  );

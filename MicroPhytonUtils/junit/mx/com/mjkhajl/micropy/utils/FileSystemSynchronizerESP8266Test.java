@@ -6,16 +6,16 @@ import org.junit.After;
 import org.junit.Before;
 import org.junit.Test;
 
-public class F8266FileSystemSynchronizerTest {
+public class FileSystemSynchronizerESP8266Test {
 	
-	F8266FileSystemSynchronizer sync;
+	FileSystemSynchronizerESP8266 sync;
 	
-	private static final File TEST_DIR_ROOT = new File("C:/Users/Luis Miguel/workspace/MicroPhytonUtils/web-server");
+	private static final File TEST_DIR_ROOT = new File("C:/Users/Luis Miguel/git/MicroPytonUtils/MicroPhytonUtils/web-server");
 	
 	@Before
 	public void setUp() throws Throwable {
 		
-		sync = new F8266FileSystemSynchronizer();
+		sync = new FileSystemSynchronizerESP8266();
 	}
 	
 	@Test
