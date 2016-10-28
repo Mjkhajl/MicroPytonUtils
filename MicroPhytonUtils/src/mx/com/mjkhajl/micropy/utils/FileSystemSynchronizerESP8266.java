@@ -1,152 +1,129 @@
 package mx.com.mjkhajl.micropy.utils;
+
+import java.io.ByteArrayOutputStream;
 import java.io.File;
 import java.io.FileInputStream;
 import java.io.IOException;
-import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
-import java.util.regex.Matcher;
-import java.util.regex.Pattern;
-
-import javax.comm.SerialPort;
 
 public class FileSystemSynchronizerESP8266 extends FileSystemSynchronizerAbstract {
 
-	private static final int COMM_TIMEOUT = 100;
-	private static final int BPS_SPEED = 115200;
-	private static final int DIR_MODE = 16384;
+	private final static int		DIR_MODE	= 16384;
 
-	private static SerialReplHelper repl = new SerialReplHelper(COMM_TIMEOUT, BPS_SPEED, SerialPort.DATABITS_8,
-			SerialPort.STOPBITS_1, SerialPort.PARITY_NONE);
+	private static SerialReplHelper	repl;
 
-	public FileSystemSynchronizerESP8266() throws Throwable {
+	public FileSystemSynchronizerESP8266( long timeout, int speed, int databits, int stopbits, int parity, long rest )
+			throws Throwable {
 		super();
 
+		repl = new SerialReplHelper( timeout, speed, databits, stopbits, parity, rest );
+
 		repl.connectToFirstAvailable();
-		
 		repl.sendCommand( "import os" );
 	}
 
 	@Override
-	public List<String> listDir(String path) throws Exception {
-		
+	public List<String> listDir( String path ) throws Exception {
+
 		String commandRes = repl.sendCommand( "os.listdir('" + path + "')" );
-		
-		return matchArrayElements( commandRes, String.class );
+
+		return CodeUtils.extractItemsFromString( commandRes, String.class );
 	}
-	
+
 	@Override
-	public boolean isDir(String path) throws Exception{
-		
+	public boolean isDir( String path ) throws Exception {
+
 		String commandRes = repl.sendCommand( "os.stat('" + path + "')" );
-		
-		List<Integer> stats = matchArrayElements(commandRes, Integer.class );
-		
+
+		List<Integer> stats = CodeUtils.extractItemsFromString( commandRes, Integer.class );
+
 		return stats.get( 0 ) == DIR_MODE;
 	}
-	
-	private <T>List<T> matchArrayElements( String test, Class<T> clazz){
-		
-		
-		Pattern pattern = getArrayPattern( clazz );
-		
-		Matcher matcher = pattern.matcher( test );
-		
-		List<T> result =new ArrayList<T>();
-		
-		while( matcher.find() ){
-			
-			result.add( stringTo( matcher.group(1), clazz ) );
+
+	@Override
+	public byte[] readFile( String path ) throws Exception {
+
+		String commandRes;
+		ByteArrayOutputStream baoStream = null;
+
+		try {
+
+			repl.sendCommand( "file = open('" + path + "', 'rb' )" );
+			baoStream = new ByteArrayOutputStream();
+
+			do {
+
+				commandRes = repl.sendCommand( "file.read(64)" );
+				commandRes = CodeUtils.unescapePythonString( commandRes.substring( 2, commandRes.length() - 1 ) );
+
+				System.out.println( "real: " + commandRes );
+
+				baoStream.write( commandRes.getBytes() );
+
+			} while ( !commandRes.trim().isEmpty() );
+
+			baoStream.flush();
+
+			return baoStream.toByteArray();
+
+		} finally {
+
+			// free objects and collect garbage...
+			repl.sendCommandIgnoreErrors( "file.close()" );
+			repl.sendCommandIgnoreErrors( "del file" );
+			repl.sendCommandIgnoreErrors( "gc.collect()" );
+
+			CodeUtils.close( baoStream );
 		}
-		
-		return result;
-	}
-	
-	@SuppressWarnings("unchecked")
-	private <T> T stringTo( String value, Class<T> clazz ){
-		
-		if( clazz == String.class ){
-			
-			return (T)value;
-		}
-		
-		if( clazz == Integer.class ){
-			
-			return (T)Integer.valueOf( value );
-		}
-		
-		throw new RuntimeException( "Not implemented for " + clazz );
-	}
-	
-	private <T> Pattern getArrayPattern( Class<T> clazz ){
-		
-		String regEx="";
-		
-		if( clazz == String.class ){
-			
-			regEx = "[']([^'^\\n^\\r^/^\\\\]+)['],?\\s?";
-		}
-		else if( clazz == Integer.class ){
-			
-			regEx = "(\\d+),? ?";
-		}
-		else{
-			
-			throw new RuntimeException( "Not implemented for " + clazz );
-		}
-		
-		return Pattern.compile(regEx);
 	}
 
 	@Override
-	public byte[] readFile(String Path) {
+	public void writeDir( File srcDir, String destPath ) throws Exception {
 
-		return null;
 	}
 
 	@Override
-	public void writeDir(File srcDir, String destPath) throws Exception {
-		
-		
-	}
+	public void writeFile( File srcFile, String destPath ) throws Exception {
 
-	@Override
-	public void writeFile(File srcFile, String destPath) throws Exception {
-		
 		FileInputStream finStream = null;
-		
+
 		try {
 			finStream = new FileInputStream( srcFile );
-			
-			repl.sendCommand( "fileBytes = bytearray([])");
-			
-			byte[] buffer = new byte[100];
-			int readBytes = -1;
-			
-			while( ( readBytes = finStream.read( buffer ) ) != -1 ){
-				
-				repl.sendCommand( "fileBytes += bytes(" + Arrays.toString( Arrays.copyOf( buffer, readBytes ) ) + ")");
-			}
 
+			repl.sendCommand( "buffer = bytearray([])" );
+
+			byte[] buffer = new byte[64];
+			int readBytes = -1;
+
+			while ( ( readBytes = finStream.read( buffer ) ) != -1 ) {
+
+				byte[] chunk = Arrays.copyOf( buffer, readBytes );
+
+				System.out.println( "chunk" + new String( chunk ) );
+
+				repl.sendCommand( "buffer += bytes(" + CodeUtils.byteArrayToString( chunk ) + ")" );
+			}
 			// open the dest file in 8266
 			repl.sendCommand( "file = open('" + destPath + "', 'wb' )" );
-			repl.sendCommand( "file.write( fileBytes )" );
-			
-		} finally{
-			
+			repl.sendCommand( "file.write( buffer )" );
+			repl.sendCommand( "file.flush()" );
+
+		} finally {
+
 			CodeUtils.close( finStream );
-			
+
 			// free objects and collect garbage...
-			repl.sendCommand( "file.close()"  );
-			repl.sendCommand( "del file" );
-			repl.sendCommand( "del fileBytes" );
-			repl.sendCommand( "gc.collect()" );
+			repl.sendCommandIgnoreErrors( "del buffer" );
+			repl.sendCommandIgnoreErrors( "file.close()" );
+			repl.sendCommandIgnoreErrors( "del file" );
+			repl.sendCommandIgnoreErrors( "gc.collect()" );
 		}
 	}
 
 	@Override
 	public void close() throws IOException {
-		
+
 		repl.close();
 	}
 }
