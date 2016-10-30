@@ -155,7 +155,7 @@ public class SerialReplHelper implements Closeable {
 
 		public String getReply() {
 
-			if ( reply == null )
+			if ( reply.length() == 0 )
 				throw new IllegalStateException( "No reply was received from REPL?!!" );
 
 			return String.valueOf( reply );

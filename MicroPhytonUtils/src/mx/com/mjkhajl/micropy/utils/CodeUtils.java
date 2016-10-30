@@ -118,19 +118,16 @@ public class CodeUtils {
 			case 's':  return ' ';
 			case '\'': return '\'';
 			case '"':  return '"';
+			case '\\':  return '\\';
 		}
 		
-		return null;
+		throw new IllegalArgumentException( "No escape sequence for: " + code );
 	}
 	/* @formatter:on */
 
 	public static char pythonUnicodeToChar( String hexValue ) {
 
 		return (char) Integer.valueOf( hexValue, 16 ).intValue();
-	}
-
-	public static int unsignedToBytes( byte b ) {
-		return b & 0xFF;
 	}
 
 	public static String byteArrayToString( byte[] byteArray ) {
@@ -144,7 +141,7 @@ public class CodeUtils {
 			if ( i++ != 0 )
 				sb.append( ',' );
 
-			sb.append( unsignedToBytes( b ) );
+			sb.append( Byte.toUnsignedInt( b ) );
 		}
 
 		sb.append( "]" );

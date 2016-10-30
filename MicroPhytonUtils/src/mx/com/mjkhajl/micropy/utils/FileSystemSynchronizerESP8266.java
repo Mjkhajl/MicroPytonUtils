@@ -10,12 +10,14 @@ import java.util.List;
 public class FileSystemSynchronizerESP8266 extends FileSystemSynchronizerAbstract {
 
 	private final static int		DIR_MODE	= 16384;
+	private final int				fileChunkSize;
 
 	private static SerialReplHelper	repl;
 
-	public FileSystemSynchronizerESP8266( long timeout, int speed, int databits, int stopbits, int parity, long rest )
-			throws Throwable {
+	public FileSystemSynchronizerESP8266( long timeout, int speed, int databits, int stopbits, int parity, long rest, int fileChunkSize ) throws Throwable {
 		super();
+
+		this.fileChunkSize = fileChunkSize;
 
 		repl = new SerialReplHelper( timeout, speed, databits, stopbits, parity, rest );
 
@@ -52,12 +54,16 @@ public class FileSystemSynchronizerESP8266 extends FileSystemSynchronizerAbstrac
 			repl.sendCommand( "file = open('" + path + "', 'rb' )" );
 			baoStream = new ByteArrayOutputStream();
 
+			int total = 0;
+			
 			do {
 
-				commandRes = repl.sendCommand( "file.read(64)" );
+				total += fileChunkSize;
+				
+				commandRes = repl.sendCommand( "file.read(" + fileChunkSize + ")" );
 				commandRes = CodeUtils.unescapePythonString( commandRes.substring( 2, commandRes.length() - 1 ) );
 
-				System.out.println( "real: " + commandRes );
+				System.out.println( "[" + total + "]real: " + commandRes );
 
 				baoStream.write( commandRes.getBytes() );
 
@@ -91,22 +97,24 @@ public class FileSystemSynchronizerESP8266 extends FileSystemSynchronizerAbstrac
 		try {
 			finStream = new FileInputStream( srcFile );
 
-			repl.sendCommand( "buffer = bytearray([])" );
+			// open the dest file in 8266
+			repl.sendCommand( "file = open('" + destPath + "', 'wb' )" );
 
-			byte[] buffer = new byte[64];
+			byte[] buffer = new byte[fileChunkSize];
 			int readBytes = -1;
+			int total = 0;
 
 			while ( ( readBytes = finStream.read( buffer ) ) != -1 ) {
 
 				byte[] chunk = Arrays.copyOf( buffer, readBytes );
 
-				System.out.println( "chunk" + new String( chunk ) );
+				total += fileChunkSize;
+				
+				System.out.println( "[" + total + "] chunk" + new String( chunk ) );
 
-				repl.sendCommand( "buffer += bytes(" + CodeUtils.byteArrayToString( chunk ) + ")" );
+				repl.sendCommand( "file.write( bytes(" + CodeUtils.byteArrayToString( chunk ) + ") )" );
 			}
-			// open the dest file in 8266
-			repl.sendCommand( "file = open('" + destPath + "', 'wb' )" );
-			repl.sendCommand( "file.write( buffer )" );
+
 			repl.sendCommand( "file.flush()" );
 
 		} finally {
@@ -114,7 +122,6 @@ public class FileSystemSynchronizerESP8266 extends FileSystemSynchronizerAbstrac
 			CodeUtils.close( finStream );
 
 			// free objects and collect garbage...
-			repl.sendCommandIgnoreErrors( "del buffer" );
 			repl.sendCommandIgnoreErrors( "file.close()" );
 			repl.sendCommandIgnoreErrors( "del file" );
 			repl.sendCommandIgnoreErrors( "gc.collect()" );

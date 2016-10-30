@@ -3,7 +3,7 @@ package mx.com.mjkhajl.micropy.utils;
 import java.io.ByteArrayOutputStream;
 import java.io.File;
 import java.io.FileInputStream;
-import java.util.Arrays;
+import java.io.FileOutputStream;
 
 import org.junit.After;
 import org.junit.Before;
@@ -29,7 +29,7 @@ public class FileSystemSynchronizerESP8266Test {
 		 *  
 		 * @formatter:on	
 		 */
-		sync = new FileSystemSynchronizerESP8266( 1000, 115200, 8, 1, 0, 100 );
+		sync = new FileSystemSynchronizerESP8266( 2000, 115200, 8, 1, 0, 10, 96 );
 	}
 
 	@Test
@@ -51,17 +51,53 @@ public class FileSystemSynchronizerESP8266Test {
 	}
 
 	@Test
+	public void readBinary() throws Exception {
+
+		byte[] binary = sync.readFile( "/web-server/img.jpg" );
+
+		FileOutputStream foStream = null;
+
+		try {
+			
+			foStream = new FileOutputStream( new File( TEST_DIR_ROOT, "img-down.jpg" ) );
+			foStream.write( binary );
+			foStream.flush();
+			
+		} finally {
+
+			CodeUtils.close( foStream );
+		}
+	}
+
+	@Test
 	public void binaryIntegrity() throws Exception {
 
-		String remoteFile = "/web-server/img.jpg";
-		File localFile = new File( TEST_DIR_ROOT, "img.jpg" );
+		String testFile = "web-server.py";
+		//String testFile = "img.jpg";
+		
+		String remoteFile = "/web-server/" + testFile;
+		File localFile = new File( TEST_DIR_ROOT, testFile );
 
 		sync.writeFile( localFile, remoteFile );
 
 		byte[] readBytes = sync.readFile( remoteFile );
 		byte[] localBytes = readLocalFile( localFile );
 
-		System.out.println( "equal = " + Arrays.equals( readBytes, localBytes ) );
+		compareBytes( readBytes, localBytes );
+	}
+
+	private void compareBytes( byte[] a, byte[] b ) {
+
+		System.out.println( "a.length: " + a.length );
+		System.out.println( "b.length: " + a.length );
+
+		for ( int i = 0; i < b.length; i++ ) {
+
+			if ( (int) a[i] != b[i] ) {
+
+				System.out.println( "diference at: [" + i + "] a value: " + a[i] + "(" + (char) a[i] + ") b value: " + b[i] + "(" + (char) b[i] + ")" );
+			}
+		}
 	}
 
 	private byte[] readLocalFile( File file ) throws Exception {
