@@ -12,15 +12,9 @@ public class FileItem implements Comparable<FileItem> {
 		LOCAL, REMOTE
 	}
 
-	public enum Type {
-		DIR, FILE;
-	}
-
 	private String					fileName;
 
 	private Map<String, FileItem>	children;
-
-	private Type					type;
 
 	private Nature					nature;
 
@@ -53,7 +47,7 @@ public class FileItem implements Comparable<FileItem> {
 		return new StringBuilder()
 				.append( nature.name().charAt( 0 ) )
 				.append( "-" )
-				.append( type.name().charAt( 0 ) )
+				.append( (children.isEmpty())?'F':'D' )
 				.append( "-" )
 				.append( FileItemUtils.getFullPath( this ) )
 				.toString();
@@ -76,14 +70,6 @@ public class FileItem implements Comparable<FileItem> {
 
 	public Map<String, FileItem> getChildren() {
 		return children;
-	}
-
-	public Type getType() {
-		return type;
-	}
-
-	public void setType( Type type ) {
-		this.type = type;
 	}
 
 	public Nature getNature() {

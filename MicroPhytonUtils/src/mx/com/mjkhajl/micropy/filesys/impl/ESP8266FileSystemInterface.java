@@ -64,19 +64,20 @@ public class ESP8266FileSystemInterface implements FileSystemInterface {
 
 	@Override
 	public boolean exists( FileItem file ) throws IOException {
-		
+
 		try {
-			
+
 			isDir( file );
-			
+
 		} catch ( RemoteReplException e ) {
-			
-			if( e.getMessage().endsWith( "ENOENT" ) ) return false;
+
+			if ( e.getMessage().endsWith( "ENOENT" ) )
+				return false;
 		}
-		
+
 		return true;
 	}
-	
+
 	@Override
 	public void close() throws IOException {
 
@@ -85,15 +86,31 @@ public class ESP8266FileSystemInterface implements FileSystemInterface {
 
 	@Override
 	public boolean mkdir( FileItem dir ) throws IOException {
-		
+
 		repl.sendCommand( "os.mkdir( '" + getFullPath( dir ) + "' )" );
-		
+
 		return true;
 	}
 
-	private String getFullPath( FileItem file ){
-		
+	private String getFullPath( FileItem file ) {
+
 		return FileItemUtils.getFullPath( file );
 	}
-	
+
+	@Override
+	public boolean rmdir( FileItem dir ) throws IOException {
+
+		repl.sendCommand( "os.rmdir( '" + getFullPath( dir ) + "' )" );
+
+		return true;
+	}
+
+	@Override
+	public boolean delete( FileItem file ) throws IOException {
+		
+		repl.sendCommand( "os.remove( '" + getFullPath( file ) + "' )" );
+
+		return true;
+	}
+
 }

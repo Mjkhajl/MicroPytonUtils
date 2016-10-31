@@ -3,12 +3,13 @@ package mx.com.mjkhajl.micropy.filesys.impl;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
+import java.util.HashSet;
+import java.util.Set;
 
 import mx.com.mjkhajl.micropy.filesys.FileSystemInterface;
 import mx.com.mjkhajl.micropy.filesys.FileSystemSynchronizer;
 import mx.com.mjkhajl.micropy.filesys.vo.FileItem;
 import mx.com.mjkhajl.micropy.filesys.vo.FileItem.Nature;
-import mx.com.mjkhajl.micropy.filesys.vo.FileItem.Type;
 import mx.com.mjkhajl.micropy.utils.CodeUtils;
 import mx.com.mjkhajl.micropy.utils.FileItemUtils;
 
@@ -34,39 +35,69 @@ public class FileSystemSynchronizerImpl implements FileSystemSynchronizer {
 
 			desFs.mkdir( desDir );
 		}
+		Set<String> srcFiles = new HashSet<String>();
 
-		for ( String fileName : srcFs.listDir( srcDir ) ) {
+		srcFiles.addAll( srcFs.listDir( srcDir ) );
+
+		// sincronize src files into dest...
+		for ( String fileName : srcFiles ) {
 
 			FileItem srcFile = new FileItem( srcDir, fileName );
 			FileItem desFile = new FileItem( desDir, fileName );
 
 			if ( srcFs.isDir( srcFile ) ) {
 
-				srcFile.setType( Type.DIR );
-				desFile.setType( Type.DIR );
 				synchronizeDir( srcFile, desFile );
 			} else {
 
-				srcFile.setType( Type.FILE );
-				desFile.setType( Type.FILE );
 				synchronizeFile( srcFile, desFile );
 			}
+		}
+
+		// delete dest files that were deleted files in src...
+		for ( String fileName : desFs.listDir( desDir ) ) {
+
+			// if file is not in src... 
+			if ( !srcFiles.contains( fileName ) ) {
+				// ...delete indest
+				delete( new FileItem( desDir, fileName ) );
+			}
+		}
+	}
+
+	private void delete( FileItem file ) throws IOException {
+
+		FileSystemInterface fsi = getFSInterface( file );
+
+		if ( fsi.isDir( file ) ) {
+
+			for ( String fileName : fsi.listDir( file ) ) {
+
+				FileItem fileChild = new FileItem( file, fileName );
+
+				delete( fileChild );
+			}
+
+			fsi.rmdir( file );
+		} else {
+
+			fsi.delete( file );
 		}
 	}
 
 	private void synchronizeFile( FileItem srcFile, FileItem destFile ) throws IOException {
 
-		if( !exists( destFile) || !equals( srcFile, destFile ) ){
-			
+		if ( !exists( destFile ) || !equals( srcFile, destFile ) ) {
+
 			copyFile( srcFile, destFile );
 			return;
 		}
-		
+
 		System.out.println( "Files are equal..." + FileItemUtils.getFullPath( destFile ) );
 	}
-	
-	private boolean exists( FileItem file ) throws IOException{
-		
+
+	private boolean exists( FileItem file ) throws IOException {
+
 		return getFSInterface( file ).exists( file );
 	}
 
@@ -83,12 +114,9 @@ public class FileSystemSynchronizerImpl implements FileSystemSynchronizer {
 
 		if ( getFSInterface( item ).isDir( item ) ) {
 
-			item.setType( Type.DIR );
 			processDir( item );
 			return;
 		}
-
-		item.setType( Type.FILE );
 	}
 
 	private void processDir( FileItem dirItem ) throws IOException {

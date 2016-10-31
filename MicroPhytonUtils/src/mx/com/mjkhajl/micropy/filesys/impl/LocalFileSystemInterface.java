@@ -63,4 +63,16 @@ public class LocalFileSystemInterface implements FileSystemInterface {
 		
 		return getFile( dir ).mkdirs();
 	}
+
+	@Override
+	public boolean rmdir( FileItem dir ) throws IOException {
+		
+		return getFile( dir ).delete();
+	}
+
+	@Override
+	public boolean delete( FileItem file ) throws IOException {
+		
+		return getFile( file ).delete();
+	}
 }

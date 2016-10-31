@@ -36,7 +36,7 @@ public class FileSystemSynchronizerESP8266Test {
 		 *  
 		 * @formatter:on	
 		 */
-		SerialReplHelper repl = new SerialReplHelper( 2000, 115200, 8, 1, 0, 50 );
+		SerialReplHelper repl = new SerialReplHelper( 2000, 115200, 8, 1, 0, 10 );
 
 		remoteFs = new ESP8266FileSystemInterface( repl, 96 );
 		localFs = new LocalFileSystemInterface();
@@ -45,7 +45,7 @@ public class FileSystemSynchronizerESP8266Test {
 	}
 
 	@Test
-	public void synchronizeFs() throws Exception {
+	public void synchronizeDir() throws Exception {
 
 		FileItem src = new FileItem( TEST_DIR_ROOT.getCanonicalPath(), Nature.LOCAL );
 		FileItem dest = new FileItem( "/web-server", Nature.REMOTE );
