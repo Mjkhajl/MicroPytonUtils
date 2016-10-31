@@ -1,4 +1,4 @@
-package mx.com.mjkhajl.micropy.utils;
+package mx.com.mjkhajl.micropy.filesys;
 
 import javax.comm.SerialPort;
 
@@ -6,7 +6,9 @@ import org.junit.After;
 import org.junit.Before;
 import org.junit.Test;
 
-import mx.com.mjkhajl.micropy.utils.exception.SerialReplException;
+import mx.com.mjkhajl.micropy.comms.SerialReplHelper;
+import mx.com.mjkhajl.micropy.comms.exception.SerialReplException;
+import mx.com.mjkhajl.micropy.utils.CodeUtils;
 
 public class SerialReplHelperTest {
 

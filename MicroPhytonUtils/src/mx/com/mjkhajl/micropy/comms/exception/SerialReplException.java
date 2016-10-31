@@ -1,6 +1,8 @@
-package mx.com.mjkhajl.micropy.utils.exception;
+package mx.com.mjkhajl.micropy.comms.exception;
 
-public class SerialReplException extends Exception {
+import java.io.IOException;
+
+public class SerialReplException extends IOException {
 
 	private static final long	serialVersionUID	= 1L;
 	private final String		module;

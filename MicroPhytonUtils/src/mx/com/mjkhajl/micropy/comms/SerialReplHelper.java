@@ -1,4 +1,4 @@
-package mx.com.mjkhajl.micropy.utils;
+package mx.com.mjkhajl.micropy.comms;
 
 import java.io.Closeable;
 import java.io.IOException;
@@ -15,7 +15,9 @@ import javax.comm.PortInUseException;
 import javax.comm.SerialPort;
 import javax.comm.UnsupportedCommOperationException;
 
-import mx.com.mjkhajl.micropy.utils.exception.SerialReplException;
+import mx.com.mjkhajl.micropy.comms.exception.NoReplyReceivedException;
+import mx.com.mjkhajl.micropy.comms.exception.SerialReplException;
+import mx.com.mjkhajl.micropy.utils.CodeUtils;
 
 @SuppressWarnings( "unchecked" )
 public class SerialReplHelper implements Closeable {
@@ -65,11 +67,40 @@ public class SerialReplHelper implements Closeable {
 			}
 		}
 
-		throw new RuntimeException( "No serial port available!!" );
+		throw new IOException( "No serial port available!!" );
 	}
 
-	public synchronized String sendCommand( String command ) throws IOException, InterruptedException, SerialReplException {
+	public String sendCommand( String command ) throws IOException {
 
+		sendCommandAsync( command );
+		
+		return checkForErrorsAndReturn( command, getResponseAsync() );
+	}
+	
+	public synchronized String getResponseAsync() throws IOException{
+		
+		SerialReader reader = new SerialReader( inStream, this );
+
+		// read inStream for reply
+		new Thread( reader ).start();
+
+		try {
+
+			// wait until notified by reader...
+			this.wait( timeout );
+
+			// gimme a break I'm just a lazy NodeMCU board...
+			Thread.sleep( lazyTime );
+		} catch ( InterruptedException e ) {
+
+			throw new RuntimeException( e );
+		}
+
+		return reader.getReply();
+	}
+
+	public synchronized void sendCommandAsync( String command ) throws IOException {
+		
 		System.out.println( ">" + command );
 
 		if ( !connected )
@@ -78,21 +109,8 @@ public class SerialReplHelper implements Closeable {
 		outStream.write( command.getBytes() );
 		outStream.write( ENDCOMMAND );
 		outStream.flush();
-
-		SerialReader reader = new SerialReader( inStream, this );
-
-		// read inStream for reply
-		new Thread( reader ).start();
-
-		// wait until notified by reader...
-		this.wait( timeout );
-
-		// gimme a break I'm just a lazy NodeMCU board...
-		Thread.sleep( lazyTime );
-
-		return checkForErrorsAndReturn( command, reader.getReply() );
 	}
-
+	
 	public String sendCommandIgnoreErrors( String command ) {
 
 		String result = "";
@@ -101,6 +119,7 @@ public class SerialReplHelper implements Closeable {
 
 			result = sendCommand( command );
 
+		} catch ( NoReplyReceivedException e ) {	
 		} catch ( Throwable e ) {
 
 			e.printStackTrace();
@@ -153,10 +172,10 @@ public class SerialReplHelper implements Closeable {
 			this.reply = new StringBuilder();
 		}
 
-		public String getReply() {
+		public String getReply() throws NoReplyReceivedException {
 
 			if ( reply.length() == 0 )
-				throw new IllegalStateException( "No reply was received from REPL?!!" );
+				throw new NoReplyReceivedException( null, "No reply was received from REPL?!!", null );
 
 			return String.valueOf( reply );
 		}
@@ -176,6 +195,8 @@ public class SerialReplHelper implements Closeable {
 					if ( tailMatchesEnd( tail, data ) )
 						break;
 				}
+				
+				System.out.println( "REPLY: " + reply );
 
 			} catch ( Exception e ) {
 

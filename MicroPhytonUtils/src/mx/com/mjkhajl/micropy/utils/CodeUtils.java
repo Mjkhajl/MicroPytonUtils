@@ -39,7 +39,6 @@ public class CodeUtils {
 
 			return (T) value;
 		}
-
 		if ( clazz == Integer.class ) {
 
 			return (T) Integer.valueOf( value );
@@ -53,7 +52,8 @@ public class CodeUtils {
 		if ( clazz == String.class ) {
 
 			return PATTERN_ARRAY_ITEMS_STRING;
-		} else if ( clazz == Integer.class ) {
+		}
+		if ( clazz == Integer.class ) {
 
 			return PATTERN_ARRAY_ITEMS_INTEGER;
 		}
@@ -88,7 +88,7 @@ public class CodeUtils {
 
 			lastEnd = matcher.end();
 		}
-		
+
 		result.append( escaped.substring( lastEnd ) );
 
 		return result.toString();
@@ -130,22 +130,21 @@ public class CodeUtils {
 		return (char) Integer.valueOf( hexValue, 16 ).intValue();
 	}
 
-	public static String byteArrayToString( byte[] byteArray ) {
+	public static String byteArrayToString( byte[] buffer, int start, int end ) {
 
 		StringBuilder sb = new StringBuilder( "[" );
 
-		int i = 0;
+		for ( int i = start; i < end; i++ ) {
 
-		for ( byte b : byteArray ) {
-
-			if ( i++ != 0 )
+			if ( i > start )
 				sb.append( ',' );
 
-			sb.append( Byte.toUnsignedInt( b ) );
+			sb.append( Byte.toUnsignedInt( buffer[i] ) );
 		}
 
 		sb.append( "]" );
 
 		return sb.toString();
 	}
+
 }
