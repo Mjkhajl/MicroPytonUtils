@@ -1,4 +1,4 @@
-package mx.com.mjkhajl.micropy.filesys.impl;
+package mx.com.mjkhajl.micropy.filesys.stream;
 
 import java.io.IOException;
 import java.io.InputStream;

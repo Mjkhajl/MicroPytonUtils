@@ -16,7 +16,7 @@ import javax.comm.SerialPort;
 import javax.comm.UnsupportedCommOperationException;
 
 import mx.com.mjkhajl.micropy.comms.exception.NoReplyReceivedException;
-import mx.com.mjkhajl.micropy.comms.exception.SerialReplException;
+import mx.com.mjkhajl.micropy.comms.exception.RemoteReplException;
 import mx.com.mjkhajl.micropy.utils.CodeUtils;
 
 @SuppressWarnings( "unchecked" )
@@ -128,12 +128,12 @@ public class SerialReplHelper implements Closeable {
 		return result;
 	}
 
-	private String checkForErrorsAndReturn( String command, String reply ) throws SerialReplException {
+	private String checkForErrorsAndReturn( String command, String reply ) throws RemoteReplException {
 
 		Matcher matcher = ERROR_PATTERN.matcher( reply );
 
 		if ( matcher.find() )
-			throw new SerialReplException( command, matcher.group( 1 ), matcher.group( 2 ) );
+			throw new RemoteReplException( command, matcher.group( 1 ), matcher.group( 2 ) );
 
 		reply = reply.substring( command.length() + 2 );
 

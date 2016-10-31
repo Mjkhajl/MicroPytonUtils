@@ -17,4 +17,8 @@ public interface FileSystemInterface extends Closeable {
 	OutputStream openFileWrite( FileItem file ) throws IOException;
 
 	boolean isDir( FileItem file ) throws IOException;
+	
+	boolean exists( FileItem file ) throws IOException;
+	
+	boolean mkdir( FileItem dir ) throws IOException;
 }

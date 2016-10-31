@@ -18,30 +18,49 @@ public class LocalFileSystemInterface implements FileSystemInterface {
 	@Override
 	public List<String> listDir( FileItem dir ) throws IOException {
 
-		return Arrays.asList( new File( FileItemUtils.getFullPath( dir ) ).list() );
+		return Arrays.asList( getFile( dir ).list() );
 	}
 
 	@Override
 	public boolean isDir( FileItem file ) throws IOException {
 
-		return new File( FileItemUtils.getFullPath( file ) ).isDirectory();
+		return getFile( file ).isDirectory();
 	}
 
 	@Override
 	public InputStream openFileRead( FileItem file ) throws IOException {
-
-		System.out.println( "open[R]:" + FileItemUtils.getFullPath( file ) );
-		return new FileInputStream( FileItemUtils.getFullPath( file ) );
+		
+		File lfile = getFile( file );
+		System.out.println( "open[R]:" + lfile.getCanonicalPath() );
+		return new FileInputStream( lfile );
 	}
 
 	@Override
 	public OutputStream openFileWrite( FileItem file ) throws IOException {
-
-		System.out.println( "open[W]: " + FileItemUtils.getFullPath( file ) );
-		return new FileOutputStream( FileItemUtils.getFullPath( file ) );
+		
+		File lfile = getFile( file );
+		System.out.println( "open[W]: " + lfile.getCanonicalPath() );
+		return new FileOutputStream( lfile );
 	}
 
 	@Override
 	public void close() throws IOException {
+	}
+
+	@Override
+	public boolean exists( FileItem file ) throws IOException {
+		
+		return getFile( file ).exists();
+	}
+	
+	private File getFile( FileItem file ){
+		
+		return new File( FileItemUtils.getFullPath( file ) );
+	}
+
+	@Override
+	public boolean mkdir( FileItem dir ) throws IOException {
+		
+		return getFile( dir ).mkdirs();
 	}
 }

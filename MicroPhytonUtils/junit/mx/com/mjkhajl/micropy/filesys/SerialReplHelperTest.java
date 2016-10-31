@@ -7,7 +7,7 @@ import org.junit.Before;
 import org.junit.Test;
 
 import mx.com.mjkhajl.micropy.comms.SerialReplHelper;
-import mx.com.mjkhajl.micropy.comms.exception.SerialReplException;
+import mx.com.mjkhajl.micropy.comms.exception.RemoteReplException;
 import mx.com.mjkhajl.micropy.utils.CodeUtils;
 
 public class SerialReplHelperTest {
@@ -30,7 +30,7 @@ public class SerialReplHelperTest {
 		repl.sendCommand( "os.listdir()" );
 	}
 
-	@Test( expected = SerialReplException.class )
+	@Test( expected = RemoteReplException.class )
 	public void errorResult() throws Throwable {
 
 		repl.sendCommand( "asnos señor de tu rebaño" );

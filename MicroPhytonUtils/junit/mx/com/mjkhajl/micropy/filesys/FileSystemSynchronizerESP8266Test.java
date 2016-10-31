@@ -1,10 +1,6 @@
 package mx.com.mjkhajl.micropy.filesys;
 
-import java.io.ByteArrayOutputStream;
 import java.io.File;
-import java.io.IOException;
-import java.io.InputStream;
-import java.util.Arrays;
 
 import org.junit.After;
 import org.junit.Before;
@@ -54,7 +50,7 @@ public class FileSystemSynchronizerESP8266Test {
 		FileItem src = new FileItem( TEST_DIR_ROOT.getCanonicalPath(), Nature.LOCAL );
 		FileItem dest = new FileItem( "/web-server", Nature.REMOTE );
 
-		sync.synchronizeFs( src, dest );
+		sync.synchronizeDir( src, dest );
 	}
 
 	@Test
@@ -76,7 +72,7 @@ public class FileSystemSynchronizerESP8266Test {
 	}
 
 	@Test
-	public void binaryRound() throws Exception {
+	public void equals() throws Exception {
 
 		FileItem remote = new FileItem( "/web-server/img.jpg", FileItem.Nature.REMOTE );
 		FileItem local = new FileItem( new File( TEST_DIR_ROOT, "img.jpg" ).getCanonicalPath(), FileItem.Nature.LOCAL );
@@ -84,37 +80,8 @@ public class FileSystemSynchronizerESP8266Test {
 		// upload file
 		sync.copyFile( local, remote );
 
-		byte[] localBytes = readFileStream( local, localFs );
-		byte[] remoteBytes = readFileStream( remote, remoteFs );
-
-		if ( !Arrays.equals( localBytes, remoteBytes ) )
+		if ( !sync.equals( remote, local ) )
 			throw new IllegalStateException( "files are not equal..." );
-	}
-
-	private byte[] readFileStream( FileItem file, FileSystemInterface fsInterface ) throws IOException {
-
-		InputStream inStream = null;
-		ByteArrayOutputStream baoStream = null;
-
-		try {
-
-			baoStream = new ByteArrayOutputStream();
-			inStream = fsInterface.openFileRead( file );
-			int data = -1;
-
-			while ( ( data = inStream.read() ) != -1 ) {
-
-				baoStream.write( data );
-			}
-
-			baoStream.close();
-
-			return baoStream.toByteArray();
-		} finally {
-
-			CodeUtils.close( inStream, baoStream );
-		}
-
 	}
 
 	@After

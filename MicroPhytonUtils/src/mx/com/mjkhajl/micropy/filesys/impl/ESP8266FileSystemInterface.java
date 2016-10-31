@@ -6,7 +6,10 @@ import java.io.OutputStream;
 import java.util.List;
 
 import mx.com.mjkhajl.micropy.comms.SerialReplHelper;
+import mx.com.mjkhajl.micropy.comms.exception.RemoteReplException;
 import mx.com.mjkhajl.micropy.filesys.FileSystemInterface;
+import mx.com.mjkhajl.micropy.filesys.stream.ESP8266FileInputStream;
+import mx.com.mjkhajl.micropy.filesys.stream.ESP8266FileOutputStream;
 import mx.com.mjkhajl.micropy.filesys.vo.FileItem;
 import mx.com.mjkhajl.micropy.utils.CodeUtils;
 import mx.com.mjkhajl.micropy.utils.FileItemUtils;
@@ -32,7 +35,7 @@ public class ESP8266FileSystemInterface implements FileSystemInterface {
 	@Override
 	public List<String> listDir( FileItem dir ) throws IOException {
 
-		String commandRes = repl.sendCommand( "os.listdir('" + FileItemUtils.getFullPath( dir ) + "')" );
+		String commandRes = repl.sendCommand( "os.listdir('" + getFullPath( dir ) + "')" );
 
 		return CodeUtils.extractItemsFromString( commandRes, String.class );
 	}
@@ -40,7 +43,7 @@ public class ESP8266FileSystemInterface implements FileSystemInterface {
 	@Override
 	public boolean isDir( FileItem file ) throws IOException {
 
-		String commandRes = repl.sendCommand( "os.stat('" + FileItemUtils.getFullPath( file ) + "')" );
+		String commandRes = repl.sendCommand( "os.stat('" + getFullPath( file ) + "')" );
 
 		List<Integer> stats = CodeUtils.extractItemsFromString( commandRes, Integer.class );
 
@@ -60,9 +63,37 @@ public class ESP8266FileSystemInterface implements FileSystemInterface {
 	}
 
 	@Override
+	public boolean exists( FileItem file ) throws IOException {
+		
+		try {
+			
+			isDir( file );
+			
+		} catch ( RemoteReplException e ) {
+			
+			if( e.getMessage().endsWith( "ENOENT" ) ) return false;
+		}
+		
+		return true;
+	}
+	
+	@Override
 	public void close() throws IOException {
 
 		CodeUtils.close( repl );
 	}
 
+	@Override
+	public boolean mkdir( FileItem dir ) throws IOException {
+		
+		repl.sendCommand( "os.mkdir( '" + getFullPath( dir ) + "' )" );
+		
+		return true;
+	}
+
+	private String getFullPath( FileItem file ){
+		
+		return FileItemUtils.getFullPath( file );
+	}
+	
 }
