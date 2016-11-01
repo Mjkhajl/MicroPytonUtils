@@ -43,13 +43,13 @@ public class ReplHelper implements Closeable {
 
 		try {
 
+			conn.write( command.getBytes() );
+			conn.write( ReplReader.CR_LF_B );
+			
 			// start the reader before so it can read while command is
 			// written...
 			new Thread( reader ).start();
-
-			conn.write( command.getBytes() );
-			conn.write( ReplReader.CR_LF_B );
-
+			
 			// wait for reader to notify or time to run out
 			this.wait( timeout );
 

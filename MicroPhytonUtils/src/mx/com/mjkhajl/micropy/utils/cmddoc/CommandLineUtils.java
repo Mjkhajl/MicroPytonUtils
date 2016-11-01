@@ -1,6 +1,7 @@
 package mx.com.mjkhajl.micropy.utils.cmddoc;
 
 import java.io.PrintStream;
+import java.lang.reflect.InvocationTargetException;
 import java.lang.reflect.Method;
 import java.lang.reflect.Modifier;
 
@@ -21,9 +22,19 @@ public class CommandLineUtils {
 
 			return;
 
-		} catch ( Exception e ) {
+		} catch ( InvocationTargetException e ) {
 
-			e.printStackTrace( System.err );
+			if( e.getTargetException() != null ){
+				
+				e.getTargetException().printStackTrace();
+			}
+			else{
+				
+				e.printStackTrace();
+			}
+		} catch ( Exception e ) {
+			
+			e.printStackTrace();
 		}
 
 		throw new IllegalArgumentException( "Unsupported command: " + args[0] );

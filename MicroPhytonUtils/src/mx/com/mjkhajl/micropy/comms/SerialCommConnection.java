@@ -48,13 +48,6 @@ public class SerialCommConnection implements Connection {
 		this.timeout = timeout;
 	}
 
-	/**
-	 * Connects to the first port found with the porName provided
-	 * 
-	 * @param portName
-	 * @throws IOExceptionn
-	 *             if no port with the provided name is available to connect
-	 */
 	@Override
 	public synchronized void connectTo( String portName ) throws IOException {
 
@@ -78,12 +71,6 @@ public class SerialCommConnection implements Connection {
 		}
 	}
 
-	/**
-	 * Connects to the first Serial port available
-	 * 
-	 * @throws IOException
-	 *             if no port is available
-	 */
 	@SuppressWarnings( "unchecked" )
 	@Override
 	public synchronized void connectToFirstAvailable() throws IOException {

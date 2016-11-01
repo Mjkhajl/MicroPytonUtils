@@ -12,9 +12,7 @@ public class ReplReader implements Runnable {
 	public static final String		CONT_COMMAND_S	= "... ";
 	public static final String		CR_LF_S			= "\r\n";
 	public static final byte[]		CR_LF_B			= CR_LF_S.getBytes();
-	// private static final Pattern ERROR_PATTERN = Pattern.compile(
-	// "\\n([A-Z][a-zA-Z0-9]+Error)[:]([^\\r^\\n]*)" );
-	private static final Pattern	ERROR_PATTERN	= Pattern.compile( "^([^\\r\\n]*)([\\n\\r]|.)*([A-Z][a-zA-Z0-9]+Error)[:](.*)" );
+	private static final Pattern	ERROR_PATTERN	= Pattern.compile( "^([^\n]+)\n([^\n]+\n)*([A-Z][a-zA-Z0-9]+Error)[:](.*)" );
 
 	enum EndType {
 		ENTER_NEW_COMMAND, CONTINUE_COMMAND

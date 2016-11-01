@@ -17,8 +17,6 @@ import mx.com.mjkhajl.micropy.utils.cmddoc.CommandlineMethod;
 
 public class PythonUtilsMain {
 
-	private FileSystemSynchronizer sync;
-
 	public static void main( String[] args ) throws Exception {
 
 		PythonUtilsMain main = new PythonUtilsMain();
@@ -38,6 +36,11 @@ public class PythonUtilsMain {
 
 		if ( args.length >= 3 ) {
 
+			Connection conn = null;
+			ReplHelper repl = null;
+			FileSystemInterface remoteFs = null, localFs = null;
+			FileSystemSynchronizer sync = null;
+			
 			try {
 
 				final int bpsSpeed = 115200;
@@ -48,14 +51,14 @@ public class PythonUtilsMain {
 				final int maxReplLineSize = 300;
 				final int maxFileChunk = 256;
 
-				Connection conn = new SerialCommConnection( bpsSpeed, dataBits, stopBits, parity, timeout );
+				conn = new SerialCommConnection( bpsSpeed, dataBits, stopBits, parity, timeout );
 
 				conn.connectToFirstAvailable();
 
-				ReplHelper repl = new ReplHelper( timeout, maxReplLineSize, conn );
+				repl = new ReplHelper( timeout, maxReplLineSize, conn );
 
-				FileSystemInterface remoteFs = new ESP8266FileSystemInterface( repl, maxFileChunk );
-				FileSystemInterface localFs = new LocalFileSystemInterface();
+				remoteFs = new ESP8266FileSystemInterface( repl, maxFileChunk );
+				localFs = new LocalFileSystemInterface();
 
 				sync = new FileSystemSynchronizerImpl( localFs, remoteFs );
 
@@ -73,6 +76,9 @@ public class PythonUtilsMain {
 			} catch ( Exception e ) {
 
 				e.printStackTrace();
+			} finally{
+				
+				CodeUtils.close( remoteFs, localFs, conn, repl, sync );
 			}
 		}
 
