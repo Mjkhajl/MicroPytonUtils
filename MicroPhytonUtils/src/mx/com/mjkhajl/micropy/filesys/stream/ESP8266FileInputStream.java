@@ -3,18 +3,18 @@ package mx.com.mjkhajl.micropy.filesys.stream;
 import java.io.IOException;
 import java.io.InputStream;
 
-import mx.com.mjkhajl.micropy.comms.SerialReplHelper;
+import mx.com.mjkhajl.micropy.comms.ReplHelper;
 import mx.com.mjkhajl.micropy.filesys.vo.FileItem;
 import mx.com.mjkhajl.micropy.utils.CodeUtils;
 import mx.com.mjkhajl.micropy.utils.FileItemUtils;
 
 public class ESP8266FileInputStream extends InputStream {
 
-	private int					index;
-	private SerialReplHelper	repl;
-	private int[]				buffer;
+	private int			index;
+	private ReplHelper	repl;
+	private int[]		buffer;
 
-	public ESP8266FileInputStream( FileItem file, SerialReplHelper repl, int buffSize ) throws IOException {
+	public ESP8266FileInputStream( FileItem file, ReplHelper repl, int buffSize ) throws IOException {
 
 		this.index = -1;
 		this.repl = repl;

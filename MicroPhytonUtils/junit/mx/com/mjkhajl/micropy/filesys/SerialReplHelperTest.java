@@ -4,28 +4,31 @@ import org.junit.After;
 import org.junit.Before;
 import org.junit.Test;
 
-import mx.com.mjkhajl.micropy.comms.SerialReplHelper;
+import mx.com.mjkhajl.micropy.comms.Connection;
+import mx.com.mjkhajl.micropy.comms.ReplHelper;
+import mx.com.mjkhajl.micropy.comms.SerialCommConnection;
 import mx.com.mjkhajl.micropy.comms.exception.RemoteReplException;
 import mx.com.mjkhajl.micropy.utils.CodeUtils;
 
 public class SerialReplHelperTest {
 
-	private SerialReplHelper repl;
+	private ReplHelper repl;
 
 	@Before
 	public void setUp() throws Throwable {
-		
-		/* @formatter:off 
-		 *  TIMEOUT: 200, 
-		 *  SPEED: 115200 bps, 
-		 *  DATA BITS: 8, 
-		 *  STOP BITS: 1, 
-		 *  PARITY: NONE (0)
-		 *  MAX_COMMAND_SIZE: 300
-		 * @formatter:on */
-		repl = new SerialReplHelper( 2000, 115200, 8, 1, 0, 300 );
 
-		System.out.println( "connected to " + repl.connectToFirstAvailable() );
+		final int bpsSpeed = 115200;
+		final int dataBits = 8;
+		final int stopBits = 1;
+		final int parity = 0; // none see @javax.comm.SerialPort
+		final int timeout = 5000;
+		final int maxReplLineSize = 300;
+
+		Connection conn = new SerialCommConnection( bpsSpeed, dataBits, stopBits, parity, timeout );
+
+		conn.connectToFirstAvailable();
+
+		repl = new ReplHelper( timeout, maxReplLineSize, conn );
 	}
 
 	@Test

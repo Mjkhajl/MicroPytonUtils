@@ -2,7 +2,9 @@ package mx.com.mjkhajl.micropy.utils;
 
 import java.io.IOException;
 
-import mx.com.mjkhajl.micropy.comms.SerialReplHelper;
+import mx.com.mjkhajl.micropy.comms.Connection;
+import mx.com.mjkhajl.micropy.comms.ReplHelper;
+import mx.com.mjkhajl.micropy.comms.SerialCommConnection;
 import mx.com.mjkhajl.micropy.filesys.FileSystemInterface;
 import mx.com.mjkhajl.micropy.filesys.FileSystemSynchronizer;
 import mx.com.mjkhajl.micropy.filesys.impl.ESP8266FileSystemInterface;
@@ -38,17 +40,21 @@ public class PythonUtilsMain {
 
 			try {
 
-				/* @formatter:off 
-				 *  TIMEOUT: 200, 
-				 *  SPEED: 115200 bps, 
-				 *  DATA BITS: 8, 
-				 *  STOP BITS: 1, 
-				 *  PARITY: NONE (0)
-				 *  MAX_COMMAND_SIZE: 300
-				 * @formatter:on */
-				SerialReplHelper repl = new SerialReplHelper( 5000, 115200, 8, 1, 0, 300 );
+				final int bpsSpeed = 115200;
+				final int dataBits = 8;
+				final int stopBits = 1;
+				final int parity = 0; // none see @javax.comm.SerialPort
+				final int timeout = 5000;
+				final int maxReplLineSize = 300;
+				final int maxFileChunk = 256;
 
-				FileSystemInterface remoteFs = new ESP8266FileSystemInterface( repl, 256 );
+				Connection conn = new SerialCommConnection( bpsSpeed, dataBits, stopBits, parity, timeout );
+
+				conn.connectToFirstAvailable();
+
+				ReplHelper repl = new ReplHelper( timeout, maxReplLineSize, conn );
+
+				FileSystemInterface remoteFs = new ESP8266FileSystemInterface( repl, maxFileChunk );
 				FileSystemInterface localFs = new LocalFileSystemInterface();
 
 				sync = new FileSystemSynchronizerImpl( localFs, remoteFs );

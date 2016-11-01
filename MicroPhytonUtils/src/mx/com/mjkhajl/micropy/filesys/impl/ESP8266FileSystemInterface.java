@@ -5,7 +5,7 @@ import java.io.InputStream;
 import java.io.OutputStream;
 import java.util.List;
 
-import mx.com.mjkhajl.micropy.comms.SerialReplHelper;
+import mx.com.mjkhajl.micropy.comms.ReplHelper;
 import mx.com.mjkhajl.micropy.comms.exception.RemoteReplException;
 import mx.com.mjkhajl.micropy.filesys.FileSystemInterface;
 import mx.com.mjkhajl.micropy.filesys.stream.ESP8266FileInputStream;
@@ -19,16 +19,15 @@ public class ESP8266FileSystemInterface implements FileSystemInterface {
 	private final static int	DIR_MODE	= 16384;
 	private final int			fileChunkSize;
 
-	private SerialReplHelper	repl;
+	private ReplHelper	repl;
 
-	public ESP8266FileSystemInterface( SerialReplHelper repl, int fileChunkSize ) throws IOException, Exception {
+	public ESP8266FileSystemInterface( ReplHelper repl, int fileChunkSize ) throws IOException, Exception {
 		super();
 
 		this.fileChunkSize = fileChunkSize;
 
 		this.repl = repl;
 
-		repl.connectToFirstAvailable();
 		repl.sendCommand( "import os" );
 	}
 

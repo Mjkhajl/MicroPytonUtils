@@ -6,7 +6,9 @@ import org.junit.After;
 import org.junit.Before;
 import org.junit.Test;
 
-import mx.com.mjkhajl.micropy.comms.SerialReplHelper;
+import mx.com.mjkhajl.micropy.comms.Connection;
+import mx.com.mjkhajl.micropy.comms.ReplHelper;
+import mx.com.mjkhajl.micropy.comms.SerialCommConnection;
 import mx.com.mjkhajl.micropy.filesys.impl.ESP8266FileSystemInterface;
 import mx.com.mjkhajl.micropy.filesys.impl.FileSystemSynchronizerImpl;
 import mx.com.mjkhajl.micropy.filesys.impl.LocalFileSystemInterface;
@@ -19,24 +21,28 @@ public class FileSystemSynchronizerESP8266Test {
 	FileSystemSynchronizer		sync;
 	LocalFileSystemInterface	localFs;
 	ESP8266FileSystemInterface	remoteFs;
-	
+
 	private static final File	TEST_DIR_RO0T	= new File( "C:/Users/Luis Miguel/git/MicroPytonUtils/MicroPhytonUtils" );
 	private static final File	TEST_DIR_SYNC	= new File( TEST_DIR_RO0T, "webserver" );
 
 	@Before
 	public void setUp() throws Throwable {
 
-		/* @formatter:off 
-		 *  TIMEOUT: 200, 
-		 *  SPEED: 115200 bps, 
-		 *  DATA BITS: 8, 
-		 *  STOP BITS: 1, 
-		 *  PARITY: NONE (0)
-		 *  MAX_COMMAND_SIZE: 300
-		 * @formatter:on */
-		SerialReplHelper repl = new SerialReplHelper( 5000, 115200, 8, 1, 0, 300 );
+		final int bpsSpeed = 115200;
+		final int dataBits = 8;
+		final int stopBits = 1;
+		final int parity = 0; // none see @javax.comm.SerialPort
+		final int timeout = 5000;
+		final int maxReplLineSize = 300;
+		final int maxFileChunk = 256;
 
-		remoteFs = new ESP8266FileSystemInterface( repl, 256 );
+		Connection conn = new SerialCommConnection( bpsSpeed, dataBits, stopBits, parity, timeout );
+
+		conn.connectToFirstAvailable();
+
+		ReplHelper repl = new ReplHelper( timeout, maxReplLineSize, conn );
+
+		remoteFs = new ESP8266FileSystemInterface( repl, maxFileChunk );
 		localFs = new LocalFileSystemInterface();
 
 		sync = new FileSystemSynchronizerImpl( localFs, remoteFs );
@@ -64,7 +70,7 @@ public class FileSystemSynchronizerESP8266Test {
 	public void downloadFile() throws Exception {
 
 		FileItem src = new FileItem( "/webserver/server.py", FileItem.Nature.REMOTE );
-		FileItem dest = new FileItem( new File( new File( TEST_DIR_RO0T, "down"), "server.py" ).getCanonicalPath(), FileItem.Nature.LOCAL );
+		FileItem dest = new FileItem( new File( new File( TEST_DIR_RO0T, "down" ), "server.py" ).getCanonicalPath(), FileItem.Nature.LOCAL );
 
 		sync.copyFile( src, dest );
 	}

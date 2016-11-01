@@ -3,7 +3,7 @@ package mx.com.mjkhajl.micropy.filesys.stream;
 import java.io.IOException;
 import java.io.OutputStream;
 
-import mx.com.mjkhajl.micropy.comms.SerialReplHelper;
+import mx.com.mjkhajl.micropy.comms.ReplHelper;
 import mx.com.mjkhajl.micropy.filesys.vo.FileItem;
 import mx.com.mjkhajl.micropy.utils.CodeUtils;
 import mx.com.mjkhajl.micropy.utils.FileItemUtils;
@@ -11,10 +11,10 @@ import mx.com.mjkhajl.micropy.utils.FileItemUtils;
 public class ESP8266FileOutputStream extends OutputStream {
 
 	private int					index;
-	private SerialReplHelper	repl;
+	private ReplHelper	repl;
 	private byte[]				buffer;
 
-	public ESP8266FileOutputStream( FileItem file, SerialReplHelper repl, int buffSize ) throws IOException {
+	public ESP8266FileOutputStream( FileItem file, ReplHelper repl, int buffSize ) throws IOException {
 
 		this.index = 0;
 		this.repl = repl;

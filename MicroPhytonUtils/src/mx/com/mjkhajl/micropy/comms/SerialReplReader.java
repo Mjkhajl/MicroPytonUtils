@@ -1,7 +1,5 @@
 package mx.com.mjkhajl.micropy.comms;
 
-import java.io.InputStream;
-import java.util.Arrays;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
@@ -10,29 +8,27 @@ import mx.com.mjkhajl.micropy.comms.exception.RemoteReplException;
 
 public class SerialReplReader implements Runnable {
 
-	public static final String		END_REPLY_STR	= ">>> ";
-	public static final byte[]		END_REPLY		= END_REPLY_STR.getBytes();
-	public static final String		CONT_REPLY_STR	= "... ";
-	public static final byte[]		CONT_REPLY		= CONT_REPLY_STR.getBytes();
-	public static final String		END_COMMAND_STR	= "\r\n";
-	public static final byte[]		END_COMMAND		= END_COMMAND_STR.getBytes();
+	public static final String		END_REPLY_S		= ">>> ";
+	public static final String		CONT_COMMAND_S	= "... ";
+	public static final String		CR_LF_S			= "\r\n";
+	public static final byte[]		CR_LF_B			= CR_LF_S.getBytes();
 	private static final Pattern	ERROR_PATTERN	= Pattern.compile( "\\n([A-Z][a-zA-Z0-9]+Error)[:]([^\\r^\\n]*)" );
 
 	enum EndType {
-		WAIT, CONTINUE
+		ENTER_NEW_COMMAND, CONTINUE_COMMAND
 	}
 
-	private InputStream		inStream;
+	private Connection		conn;
 	private StringBuilder	reply;
 	private Object			monitor;
 	private EndType			endType;
 
-	public SerialReplReader( InputStream inStream, Object monitor ) {
+	public SerialReplReader( Connection conn, Object monitor ) {
 
-		this.inStream = inStream;
+		this.conn = conn;
 		this.monitor = monitor;
 		this.reply = new StringBuilder();
-		this.endType = EndType.CONTINUE;
+		this.endType = EndType.CONTINUE_COMMAND;
 	}
 
 	public String getReply() throws NoReplyReceivedException {
@@ -40,7 +36,7 @@ public class SerialReplReader implements Runnable {
 		if ( reply.length() == 0 )
 			throw new NoReplyReceivedException( null, "No reply was received from REPL?!!", null );
 
-		return String.valueOf( reply );
+		return reply.toString();
 	}
 
 	public EndType getEndType() {
@@ -53,13 +49,12 @@ public class SerialReplReader implements Runnable {
 		try {
 
 			int data;
-			byte[] tail = new byte[4];
 
-			while ( ( data = inStream.read() ) != -1 ) {
+			while ( ( data = conn.read() ) != -1 ) {
 
 				reply.append( (char) data );
 
-				if ( tailMatchesEnd( tail, data ) )
+				if ( endStringMatches( reply ) )
 					break;
 			}
 
@@ -71,55 +66,59 @@ public class SerialReplReader implements Runnable {
 
 			synchronized ( monitor ) {
 
+				// notify all monitoring objects waiting...
 				monitor.notifyAll();
 			}
 		}
 
 	}
 
-	private boolean tailMatchesEnd( byte[] tail, int data ) {
+	private boolean endStringMatches( StringBuilder reply ) {
 
-		System.arraycopy( tail, 1, tail, 0, END_REPLY.length - 1 );
-		tail[END_REPLY.length - 1] = (byte) data;
+		// check only if reply is more than 4 chars...
+		if ( reply.length() >= 4 ) {
 
-		if ( Arrays.equals( tail, END_REPLY ) ) {
+			// get the last 4 chars in the reply
+			String tail = reply.substring( reply.length() - 4, reply.length() );
 
-			endType = EndType.WAIT;
-			return true;
+			if ( tail.equals( CONT_COMMAND_S ) ) {
+
+				endType = EndType.CONTINUE_COMMAND;
+				return true;
+			}
+			if ( tail.equals( END_REPLY_S ) ) {
+
+				endType = EndType.ENTER_NEW_COMMAND;
+				return true;
+			}
 		}
-		if ( Arrays.equals( tail, CONT_REPLY ) ) {
-
-			endType = EndType.CONTINUE;
-			return true;
-		}
-
 		return false;
 	}
 
-	public static String checkForErrorsAndReturn( String command, String reply ) throws RemoteReplException {
+	private static void checkRemoteErrors( String reply ) throws RemoteReplException {
 
+		// search errors in the reply
 		Matcher matcher = ERROR_PATTERN.matcher( reply );
 
 		if ( matcher.find() ) {
 
-			throw new RemoteReplException( command, matcher.group( 1 ), matcher.group( 2 ) );
+			// if found throw exception with received data...
+			throw new RemoteReplException( reply, matcher.group( 1 ), matcher.group( 2 ) );
 		}
+	}
 
-		int indexOfCR = reply.indexOf( END_COMMAND_STR ) + END_COMMAND_STR.length();
+	public static String checkForErrorsAndReturn( String command, String reply ) throws RemoteReplException {
 
-		if ( indexOfCR != -1 ) {
+		checkRemoteErrors( reply );
 
-			reply = reply.substring( indexOfCR );
-		}
+		int crlfIndex = reply.indexOf( CR_LF_S );
 
-		if ( reply.length() <= 4 ) {
+		// discard the first line to the end of the CRLF
+		int begin = ( crlfIndex != -1 ) ? ( crlfIndex + 2 ) : 0;
+		// discard the tail (...\s Continue ) (>>>\s New command )
+		int end = ( reply.length() > begin + 4 ) ? reply.length() - 4 : begin;
 
-			reply = "";
-
-		} else {
-
-			reply = reply.substring( 0, reply.length() - 4 );
-		}
+		reply = reply.substring( begin, end );
 
 		System.out.println( ">" + reply );
 
