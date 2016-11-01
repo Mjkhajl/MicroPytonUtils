@@ -1,5 +1,6 @@
 package mx.com.mjkhajl.micropy.filesys.impl;
 
+import java.io.FileNotFoundException;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
@@ -28,6 +29,12 @@ public class FileSystemSynchronizerImpl implements FileSystemSynchronizer {
 	@Override
 	public void synchronizeDir( FileItem srcDir, FileItem desDir ) throws IOException {
 
+		// source directory is non existent?
+		if ( !exists( srcDir ) ) {
+
+			throw new FileNotFoundException( FileItemUtils.getFullPath( srcDir ) );
+		}
+
 		FileSystemInterface srcFs = getFSInterface( srcDir );
 		FileSystemInterface desFs = getFSInterface( desDir );
 
@@ -39,7 +46,7 @@ public class FileSystemSynchronizerImpl implements FileSystemSynchronizer {
 
 		srcFiles.addAll( srcFs.listDir( srcDir ) );
 
-		// sincronize src files into dest...
+		// synchronize src files into dest...
 		for ( String fileName : srcFiles ) {
 
 			FileItem srcFile = new FileItem( srcDir, fileName );
@@ -57,7 +64,7 @@ public class FileSystemSynchronizerImpl implements FileSystemSynchronizer {
 		// delete dest files that were deleted files in src...
 		for ( String fileName : desFs.listDir( desDir ) ) {
 
-			// if file is not in src... 
+			// if file is not in src...
 			if ( !srcFiles.contains( fileName ) ) {
 				// ...delete indest
 				delete( new FileItem( desDir, fileName ) );
@@ -89,11 +96,13 @@ public class FileSystemSynchronizerImpl implements FileSystemSynchronizer {
 
 		if ( !exists( destFile ) || !equals( srcFile, destFile ) ) {
 
+			System.out.println( "******** Sync File..." + FileItemUtils.getFullPath( destFile ) );
 			copyFile( srcFile, destFile );
 			return;
-		}
+		} else {
 
-		System.out.println( "Files are equal..." + FileItemUtils.getFullPath( destFile ) );
+			System.out.println( "******** Nothing to sync..." + FileItemUtils.getFullPath( destFile ) );
+		}
 	}
 
 	private boolean exists( FileItem file ) throws IOException {

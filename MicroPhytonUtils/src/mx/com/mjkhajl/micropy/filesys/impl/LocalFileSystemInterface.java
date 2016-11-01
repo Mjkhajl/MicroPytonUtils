@@ -29,7 +29,7 @@ public class LocalFileSystemInterface implements FileSystemInterface {
 
 	@Override
 	public InputStream openFileRead( FileItem file ) throws IOException {
-		
+
 		File lfile = getFile( file );
 		System.out.println( "open[R]:" + lfile.getCanonicalPath() );
 		return new FileInputStream( lfile );
@@ -37,7 +37,7 @@ public class LocalFileSystemInterface implements FileSystemInterface {
 
 	@Override
 	public OutputStream openFileWrite( FileItem file ) throws IOException {
-		
+
 		File lfile = getFile( file );
 		System.out.println( "open[W]: " + lfile.getCanonicalPath() );
 		return new FileOutputStream( lfile );
@@ -49,30 +49,30 @@ public class LocalFileSystemInterface implements FileSystemInterface {
 
 	@Override
 	public boolean exists( FileItem file ) throws IOException {
-		
+
 		return getFile( file ).exists();
 	}
-	
-	private File getFile( FileItem file ){
-		
+
+	private File getFile( FileItem file ) {
+
 		return new File( FileItemUtils.getFullPath( file ) );
 	}
 
 	@Override
 	public boolean mkdir( FileItem dir ) throws IOException {
-		
+
 		return getFile( dir ).mkdirs();
 	}
 
 	@Override
 	public boolean rmdir( FileItem dir ) throws IOException {
-		
+
 		return getFile( dir ).delete();
 	}
 
 	@Override
 	public boolean delete( FileItem file ) throws IOException {
-		
+
 		return getFile( file ).delete();
 	}
 }

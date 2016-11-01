@@ -3,6 +3,7 @@ package mx.com.mjkhajl.micropy.utils;
 import java.io.Closeable;
 import java.io.IOException;
 import java.util.ArrayList;
+import java.util.LinkedList;
 import java.util.List;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
@@ -12,6 +13,7 @@ public class CodeUtils {
 	private static final Pattern	PATTERN_ARRAY_ITEMS_STRING	= Pattern.compile( "[']([^']+)['],?\\s?" );
 	private static final Pattern	PATTERN_ARRAY_ITEMS_INTEGER	= Pattern.compile( "(\\d+),? ?" );
 	private static final Pattern	PATTERN_PYTHON_ESCAPECODES	= Pattern.compile( "[\\\\](x[0-9a-f]{2}|[abfnrtvs\\\\'\"\\n])" );
+	private static final Pattern	PATTERN_SEPARABLE_COMMAND	= Pattern.compile( "[:,\\s\\[\\]\\(\\)]" );
 
 	@SafeVarargs
 	public static <T extends Closeable> void close( T... closeables ) {
@@ -145,5 +147,45 @@ public class CodeUtils {
 		sb.append( "]" );
 
 		return sb.toString();
+	}
+
+	public static List<String> tokenizeCommand( String command, int maxSize ) {
+
+		List<String> tokens = new LinkedList<String>();
+
+		if ( command.length() <= maxSize ) {
+
+			tokens.add( command );
+		} else {
+
+			Matcher matcher = PATTERN_SEPARABLE_COMMAND.matcher( command );
+			StringBuilder token = new StringBuilder();
+			String chunk;
+
+			int lastEnd = 0;
+
+			while ( matcher.find() ) {
+
+				chunk = command.substring( lastEnd, matcher.end() );
+
+				if ( ( token.length() + chunk.length() ) > maxSize ) {
+
+					tokens.add( token.toString() );
+					token.setLength( 0 );
+				}
+
+				token.append( chunk );
+				lastEnd = matcher.end();
+			}
+
+			token.append( command.substring( lastEnd, command.length() ) );
+
+			if ( token.length() != 0 ) {
+
+				tokens.add( token.toString() );
+			}
+		}
+
+		return tokens;
 	}
 }

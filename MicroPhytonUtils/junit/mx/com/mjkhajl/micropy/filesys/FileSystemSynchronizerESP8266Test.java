@@ -19,26 +19,24 @@ public class FileSystemSynchronizerESP8266Test {
 	FileSystemSynchronizer		sync;
 	LocalFileSystemInterface	localFs;
 	ESP8266FileSystemInterface	remoteFs;
-
-	private static final File	TEST_DIR_ROOT	= new File( "C:/Users/Luis Miguel/git/MicroPytonUtils/MicroPhytonUtils/web-server" );
+	
+	private static final File	TEST_DIR_RO0T	= new File( "C:/Users/Luis Miguel/git/MicroPytonUtils/MicroPhytonUtils" );
+	private static final File	TEST_DIR_SYNC	= new File( TEST_DIR_RO0T, "webserver" );
 
 	@Before
 	public void setUp() throws Throwable {
 
-		/* @formatter:off
-		 * 
+		/* @formatter:off 
 		 *  TIMEOUT: 200, 
-		 *  SPEED: 115200 BPS, 
+		 *  SPEED: 115200 bps, 
 		 *  DATA BITS: 8, 
 		 *  STOP BITS: 1, 
-		 *  PARITY: NONE (0),
-		 *  LAZYTIME: 10
-		 *  
-		 * @formatter:on	
-		 */
-		SerialReplHelper repl = new SerialReplHelper( 2000, 115200, 8, 1, 0, 10 );
+		 *  PARITY: NONE (0)
+		 *  MAX_COMMAND_SIZE: 300
+		 * @formatter:on */
+		SerialReplHelper repl = new SerialReplHelper( 5000, 115200, 8, 1, 0, 300 );
 
-		remoteFs = new ESP8266FileSystemInterface( repl, 96 );
+		remoteFs = new ESP8266FileSystemInterface( repl, 256 );
 		localFs = new LocalFileSystemInterface();
 
 		sync = new FileSystemSynchronizerImpl( localFs, remoteFs );
@@ -47,8 +45,8 @@ public class FileSystemSynchronizerESP8266Test {
 	@Test
 	public void synchronizeDir() throws Exception {
 
-		FileItem src = new FileItem( TEST_DIR_ROOT.getCanonicalPath(), Nature.LOCAL );
-		FileItem dest = new FileItem( "/web-server", Nature.REMOTE );
+		FileItem src = new FileItem( TEST_DIR_SYNC.getCanonicalPath(), Nature.LOCAL );
+		FileItem dest = new FileItem( "/webserver", Nature.REMOTE );
 
 		sync.synchronizeDir( src, dest );
 	}
@@ -56,8 +54,8 @@ public class FileSystemSynchronizerESP8266Test {
 	@Test
 	public void uploadFile() throws Exception {
 
-		FileItem src = new FileItem( new File( TEST_DIR_ROOT, "web-server.py" ).getCanonicalPath(), FileItem.Nature.LOCAL );
-		FileItem dest = new FileItem( "/web-server/web-server.py", FileItem.Nature.REMOTE );
+		FileItem src = new FileItem( new File( TEST_DIR_SYNC, "server.py" ).getCanonicalPath(), FileItem.Nature.LOCAL );
+		FileItem dest = new FileItem( "/webserver/server.py", FileItem.Nature.REMOTE );
 
 		sync.copyFile( src, dest );
 	}
@@ -65,8 +63,8 @@ public class FileSystemSynchronizerESP8266Test {
 	@Test
 	public void downloadFile() throws Exception {
 
-		FileItem src = new FileItem( "/web-server/web-server.py", FileItem.Nature.REMOTE );
-		FileItem dest = new FileItem( new File( TEST_DIR_ROOT, "web-server-down.py" ).getCanonicalPath(), FileItem.Nature.LOCAL );
+		FileItem src = new FileItem( "/webserver/server.py", FileItem.Nature.REMOTE );
+		FileItem dest = new FileItem( new File( new File( TEST_DIR_RO0T, "down"), "server.py" ).getCanonicalPath(), FileItem.Nature.LOCAL );
 
 		sync.copyFile( src, dest );
 	}
@@ -74,11 +72,8 @@ public class FileSystemSynchronizerESP8266Test {
 	@Test
 	public void equals() throws Exception {
 
-		FileItem remote = new FileItem( "/web-server/img.jpg", FileItem.Nature.REMOTE );
-		FileItem local = new FileItem( new File( TEST_DIR_ROOT, "img.jpg" ).getCanonicalPath(), FileItem.Nature.LOCAL );
-
-		// upload file
-		sync.copyFile( local, remote );
+		FileItem remote = new FileItem( "/webserver/server.py", FileItem.Nature.REMOTE );
+		FileItem local = new FileItem( new File( TEST_DIR_SYNC, "server.py" ).getCanonicalPath(), FileItem.Nature.LOCAL );
 
 		if ( !sync.equals( remote, local ) )
 			throw new IllegalStateException( "files are not equal..." );

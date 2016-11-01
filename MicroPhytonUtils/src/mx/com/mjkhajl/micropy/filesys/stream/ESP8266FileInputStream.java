@@ -20,18 +20,6 @@ public class ESP8266FileInputStream extends InputStream {
 		this.repl = repl;
 		this.buffer = new int[buffSize];
 
-		repl.sendCommand( "import array" );
-		repl.sendCommandAsync( "def tointarray( barray ):" );
-		repl.sendCommandAsync( "iarray = array.array('i',[])" );
-		repl.sendCommandAsync( "for c in barray: iarray.append(c)" );
-		repl.sendCommandAsync( "return iarray" );
-		repl.sendCommandAsync( "" );
-		repl.sendCommandAsync( "" );
-		repl.sendCommandAsync( "" );
-
-		// we discard the pending
-		repl.getResponseAsync();
-
 		// open the file in 8266
 		repl.sendCommand( "file = open('" + FileItemUtils.getFullPath( file ) + "', 'rb' )" );
 	}
@@ -41,7 +29,7 @@ public class ESP8266FileInputStream extends InputStream {
 
 		if ( index == -1 || index >= buffer.length ) {
 
-			String response = repl.sendCommand( "tointarray( file.read(" + buffer.length + ") )" );
+			String response = repl.sendCommand( "[a for a in file.read(" + buffer.length + ")]" );
 
 			buffer = CodeUtils.extractItemsFromString( response, Integer.class ).stream().mapToInt( Integer::intValue ).toArray();
 
@@ -61,7 +49,6 @@ public class ESP8266FileInputStream extends InputStream {
 		// free objects and collect garbage...
 		repl.sendCommandIgnoreErrors( "file.close()" );
 		repl.sendCommandIgnoreErrors( "del file" );
-		repl.sendCommandIgnoreErrors( "del tointarray" );
 		repl.sendCommandIgnoreErrors( "gc.collect()" );
 		super.close();
 	}

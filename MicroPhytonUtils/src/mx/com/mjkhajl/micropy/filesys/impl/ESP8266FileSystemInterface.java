@@ -107,7 +107,7 @@ public class ESP8266FileSystemInterface implements FileSystemInterface {
 
 	@Override
 	public boolean delete( FileItem file ) throws IOException {
-		
+
 		repl.sendCommand( "os.remove( '" + getFullPath( file ) + "' )" );
 
 		return true;

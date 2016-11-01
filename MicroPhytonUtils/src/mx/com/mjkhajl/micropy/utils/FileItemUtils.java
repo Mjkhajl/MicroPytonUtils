@@ -1,5 +1,7 @@
 package mx.com.mjkhajl.micropy.utils;
 
+import java.io.File;
+
 import mx.com.mjkhajl.micropy.filesys.vo.FileItem;
 import mx.com.mjkhajl.micropy.filesys.vo.FileItem.Nature;
 
@@ -15,7 +17,7 @@ public class FileItemUtils {
 		if ( file.getParent() != null ) {
 
 			path.append( getFullPath( file.getParent() ) )
-				.append( getSeparator( file ) );
+					.append( getSeparator( file ) );
 		}
 
 		return path.append( file.getFileName() ).toString();
@@ -26,5 +28,19 @@ public class FileItemUtils {
 		if ( file.getNature() == Nature.LOCAL )
 			return LOCAL_SEPARATOR;
 		return REMOTE_SEPARATOR;
+	}
+
+	public static int checkDirSize( File dir, int currSize, int maxSize ) {
+
+		for ( File file : dir.listFiles() ) {
+			if ( file.isFile() )
+				currSize += file.length();
+			else
+				currSize += checkDirSize( file, currSize, maxSize );
+			if ( currSize > maxSize )
+				throw new IllegalArgumentException( "Dir is greater than: " + maxSize );
+		}
+
+		return currSize;
 	}
 }

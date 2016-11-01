@@ -37,13 +37,13 @@ public class ESP8266FileOutputStream extends OutputStream {
 
 	@Override
 	public void flush() throws IOException {
-		
+
 		super.flush();
 		flushBuffer();
 	}
 
 	private void flushBuffer() throws IOException {
-		
+
 		repl.sendCommand( "file.write( bytes(" + CodeUtils.byteArrayToString( buffer, 0, index ) + ") )" );
 		index = 0;
 	}
