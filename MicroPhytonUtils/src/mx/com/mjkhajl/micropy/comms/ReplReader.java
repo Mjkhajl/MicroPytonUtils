@@ -6,13 +6,15 @@ import java.util.regex.Pattern;
 import mx.com.mjkhajl.micropy.comms.exception.NoReplyReceivedException;
 import mx.com.mjkhajl.micropy.comms.exception.RemoteReplException;
 
-public class SerialReplReader implements Runnable {
+public class ReplReader implements Runnable {
 
 	public static final String		END_REPLY_S		= ">>> ";
 	public static final String		CONT_COMMAND_S	= "... ";
 	public static final String		CR_LF_S			= "\r\n";
 	public static final byte[]		CR_LF_B			= CR_LF_S.getBytes();
-	private static final Pattern	ERROR_PATTERN	= Pattern.compile( "\\n([A-Z][a-zA-Z0-9]+Error)[:]([^\\r^\\n]*)" );
+	// private static final Pattern ERROR_PATTERN = Pattern.compile(
+	// "\\n([A-Z][a-zA-Z0-9]+Error)[:]([^\\r^\\n]*)" );
+	private static final Pattern	ERROR_PATTERN	= Pattern.compile( "^([^\\r\\n]*)([\\n\\r]|.)*([A-Z][a-zA-Z0-9]+Error)[:](.*)" );
 
 	enum EndType {
 		ENTER_NEW_COMMAND, CONTINUE_COMMAND
@@ -23,7 +25,7 @@ public class SerialReplReader implements Runnable {
 	private Object			monitor;
 	private EndType			endType;
 
-	public SerialReplReader( Connection conn, Object monitor ) {
+	public ReplReader( Connection conn, Object monitor ) {
 
 		this.conn = conn;
 		this.monitor = monitor;
@@ -103,11 +105,11 @@ public class SerialReplReader implements Runnable {
 		if ( matcher.find() ) {
 
 			// if found throw exception with received data...
-			throw new RemoteReplException( reply, matcher.group( 1 ), matcher.group( 2 ) );
+			throw new RemoteReplException( matcher.group( 1 ), matcher.group( 3 ), matcher.group( 4 ) );
 		}
 	}
 
-	public static String checkForErrorsAndReturn( String command, String reply ) throws RemoteReplException {
+	public static String cleanAndReturn( String reply ) throws RemoteReplException {
 
 		checkRemoteErrors( reply );
 

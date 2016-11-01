@@ -21,7 +21,7 @@ public class ReplHelper implements Closeable {
 
 	public synchronized String sendCommand( String command ) throws IOException {
 
-		System.out.println( ">>>" );
+		System.out.print( ">>>" );
 
 		// if the command string is too long the ESP8266 will hung... so we
 		// split the string in chunks...
@@ -39,7 +39,7 @@ public class ReplHelper implements Closeable {
 
 	private synchronized String sendCommandChunk( String command ) throws IOException {
 
-		SerialReplReader reader = new SerialReplReader( conn, this );
+		ReplReader reader = new ReplReader( conn, this );
 
 		try {
 
@@ -48,7 +48,7 @@ public class ReplHelper implements Closeable {
 			new Thread( reader ).start();
 
 			conn.write( command.getBytes() );
-			conn.write( SerialReplReader.CR_LF_B );
+			conn.write( ReplReader.CR_LF_B );
 
 			// wait for reader to notify or time to run out
 			this.wait( timeout );
@@ -57,7 +57,7 @@ public class ReplHelper implements Closeable {
 			e.printStackTrace();
 		}
 
-		return SerialReplReader.checkForErrorsAndReturn( command, reader.getReply() );
+		return ReplReader.cleanAndReturn( reader.getReply() );
 	}
 
 	public String sendCommandIgnoreErrors( String command ) {

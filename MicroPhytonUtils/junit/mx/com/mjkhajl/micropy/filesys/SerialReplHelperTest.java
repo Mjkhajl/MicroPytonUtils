@@ -42,7 +42,13 @@ public class SerialReplHelperTest {
 	@Test( expected = RemoteReplException.class )
 	public void errorResult() throws Throwable {
 
-		repl.sendCommand( "asnos señor de tu rebaño" );
+		try {
+			repl.sendCommand( "asnos señor de tu rebaño" );
+
+		} catch ( Exception e ) {
+			e.printStackTrace();
+			throw e;
+		}
 	}
 
 	@Test

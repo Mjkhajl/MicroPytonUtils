@@ -24,14 +24,16 @@ public class SerialCommConnection implements Connection {
 	 * 
 	 * @see javax.comm.SerialPort javax.comm.SerialPort
 	 * 
-	 * for details on dataBits, stopBits and Parity values
+	 *      for details on dataBits, stopBits and Parity values
 	 * 
 	 * @param freq
 	 *            Bits per second transfer speed
 	 * @param dataBits
-	 *            DATA BITS for serial comm see javax.comm.SerialPort.DATA_BITS_{X}
+	 *            DATA BITS for serial comm see
+	 *            javax.comm.SerialPort.DATA_BITS_{X}
 	 * @param stopBits
-	 *            STOP BITS for serial comm see javax.comm.SerialPort.STOP_BITS_{X}
+	 *            STOP BITS for serial comm see
+	 *            javax.comm.SerialPort.STOP_BITS_{X}
 	 * @param parity
 	 *            PARITY for serial comm see javax.comm.SerialPort.PARITY_{XXXX}
 	 * @param timeout
@@ -104,7 +106,7 @@ public class SerialCommConnection implements Connection {
 
 		if ( connected )
 			throw new IllegalStateException( "Already connected!!" );
-		
+
 		try {
 			// serial ports only
 			if ( portId.getPortType() == CommPortIdentifier.PORT_SERIAL ) {
@@ -133,24 +135,26 @@ public class SerialCommConnection implements Connection {
 
 	@Override
 	public synchronized void write( byte[] data ) throws IOException {
-		
+
 		outStream.write( data );
 		outStream.flush();
 	}
-	
+
 	@Override
 	public synchronized int read() throws IOException {
-		
+
 		return inStream.read();
 	}
-	
+
 	@Override
 	public void close() throws IOException {
 
 		if ( connected ) {
 
+			// close streams silently
 			CodeUtils.close( outStream, inStream );
 
+			// close port
 			port.close();
 			connected = false;
 		}
@@ -158,7 +162,7 @@ public class SerialCommConnection implements Connection {
 
 	@Override
 	public boolean isConnected() {
-		
+
 		return connected;
 	}
 }
