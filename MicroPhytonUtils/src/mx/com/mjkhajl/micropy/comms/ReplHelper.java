@@ -3,20 +3,26 @@ package mx.com.mjkhajl.micropy.comms;
 import java.io.Closeable;
 import java.io.IOException;
 import java.util.List;
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
 
+import mx.com.mjkhajl.micropy.comms.exception.RemoteReplException;
 import mx.com.mjkhajl.micropy.utils.CodeUtils;
 
 public class ReplHelper implements Closeable {
 
-	private Connection	conn	= null;
-	private final long	timeout;
-	private final int	maxCommandSize;
+	private static final String		CR_LF_S				= "\r\n";
+	private static final byte[]		CR_LF_B				= CR_LF_S.getBytes();
+	private static final Pattern	PATTERN_ERROR		= Pattern.compile( "^([^\n]+)\n([^\n]+\n)*([A-Z][a-zA-Z0-9]+Error)[:](.*)" );
+	private static final Pattern	PATTERN_END_RPLY	= Pattern.compile( "([>]{3})|([\\.]{3})\\s$" );
+
+	private Connection				conn				= null;
+	private final int				maxCommandSize;
 
 	public ReplHelper( long timeout, int maxCommandSize, Connection conn ) throws IOException {
 
 		this.conn = conn;
 		this.maxCommandSize = maxCommandSize;
-		this.timeout = timeout;
 	}
 
 	public synchronized String sendCommand( String command ) throws IOException {
@@ -31,33 +37,31 @@ public class ReplHelper implements Closeable {
 		for ( String chunk : chunks ) {
 
 			System.out.println( chunk );
-			reply = sendCommandChunk( chunk );
+			reply = sendCommandInternal( chunk );
 		}
 
 		return reply;
 	}
 
-	private synchronized String sendCommandChunk( String command ) throws IOException {
+	private synchronized String sendCommandInternal( String command ) throws IOException {
 
-		ReplReader reader = new ReplReader( conn, this );
+		StringBuilder reply = new StringBuilder();
 
-		try {
+		conn.write( command.getBytes() );
+		conn.write( CR_LF_B );
 
-			conn.write( command.getBytes() );
-			conn.write( ReplReader.CR_LF_B );
-			
-			// start the reader before so it can read while command is
-			// written...
-			new Thread( reader ).start();
-			
-			// wait for reader to notify or time to run out
-			this.wait( timeout );
+		int data;
 
-		} catch ( InterruptedException e ) {
-			e.printStackTrace();
+		while ( ( data = conn.read() ) != -1 ) {
+
+			reply.append( (char) data );
+
+			// matches end of reply...
+			if ( PATTERN_END_RPLY.matcher( reply ).find() )
+				break;
 		}
 
-		return ReplReader.cleanAndReturn( reader.getReply() );
+		return cleanAndReturn( reply.toString() );
 	}
 
 	public String sendCommandIgnoreErrors( String command ) {
@@ -73,6 +77,31 @@ public class ReplHelper implements Closeable {
 
 			e.printStackTrace();
 		}
+
+		return reply;
+	}
+
+	private String cleanAndReturn( String reply ) throws RemoteReplException {
+
+		Matcher matcher = PATTERN_ERROR.matcher( reply );
+
+		// reply matches error pattern...
+		if ( matcher.find() ) {
+
+			// ...throw exception with received data
+			throw new RemoteReplException( matcher.group( 1 ), matcher.group( 3 ), matcher.group( 4 ) );
+		}
+
+		int crlfIndex = reply.indexOf( CR_LF_S );
+
+		// discard the first line to the end of the CRLF
+		int begin = ( crlfIndex != -1 ) ? ( crlfIndex + 2 ) : 0;
+		// discard the tail (...\s Continue ) (>>>\s New command )
+		int end = ( reply.length() > begin + 4 ) ? reply.length() - 4 : begin;
+
+		reply = reply.substring( begin, end );
+
+		System.out.println( ">" + reply );
 
 		return reply;
 	}
