@@ -19,7 +19,7 @@ public class ESP8266FileSystemInterface implements FileSystemInterface {
 	private final static int	DIR_MODE	= 16384;
 	private final int			fileChunkSize;
 
-	private ReplHelper	repl;
+	private ReplHelper			repl;
 
 	public ESP8266FileSystemInterface( ReplHelper repl, int fileChunkSize ) throws IOException, Exception {
 		super();

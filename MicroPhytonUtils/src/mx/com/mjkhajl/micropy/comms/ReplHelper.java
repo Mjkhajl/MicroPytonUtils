@@ -23,6 +23,8 @@ public class ReplHelper implements Closeable {
 
 		this.conn = conn;
 		this.maxCommandSize = maxCommandSize;
+
+		conn.connectToFirstAvailable();
 	}
 
 	public synchronized String sendCommand( String command ) throws IOException {

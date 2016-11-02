@@ -4,7 +4,6 @@ import org.junit.After;
 import org.junit.Before;
 import org.junit.Test;
 
-import mx.com.mjkhajl.micropy.comms.Connection;
 import mx.com.mjkhajl.micropy.comms.ReplHelper;
 import mx.com.mjkhajl.micropy.comms.SerialCommConnection;
 import mx.com.mjkhajl.micropy.comms.exception.RemoteReplException;
@@ -24,11 +23,10 @@ public class SerialReplHelperTest {
 		final int timeout = 5000;
 		final int maxReplLineSize = 300;
 
-		Connection conn = new SerialCommConnection( bpsSpeed, dataBits, stopBits, parity, timeout );
-
-		conn.connectToFirstAvailable();
-
-		repl = new ReplHelper( timeout, maxReplLineSize, conn );
+		repl = new ReplHelper(
+				timeout,
+				maxReplLineSize,
+				new SerialCommConnection( bpsSpeed, dataBits, stopBits, parity, timeout ) );
 	}
 
 	@Test

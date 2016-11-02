@@ -49,7 +49,7 @@ public class SerialCommConnection implements Connection {
 	}
 
 	@Override
-	public synchronized void connectTo( String portName ) throws IOException {
+	public synchronized Connection connectTo( String portName ) throws IOException {
 
 		if ( connected )
 			throw new IllegalStateException( "Already connected!! ... close connection first" );
@@ -69,11 +69,12 @@ public class SerialCommConnection implements Connection {
 
 			throw new IOException( portName + " is not available..." );
 		}
+		return this;
 	}
 
 	@SuppressWarnings( "unchecked" )
 	@Override
-	public synchronized void connectToFirstAvailable() throws IOException {
+	public synchronized Connection connectToFirstAvailable() throws IOException {
 
 		// get machine ports...
 		Enumeration<CommPortIdentifier> portIds = CommPortIdentifier.getPortIdentifiers();
@@ -82,7 +83,7 @@ public class SerialCommConnection implements Connection {
 
 			if ( tryPort( portIds.nextElement() ) ) {
 
-				return;
+				return this;
 			}
 		}
 

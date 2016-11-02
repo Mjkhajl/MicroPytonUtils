@@ -24,16 +24,15 @@ public class CommandLineUtils {
 
 		} catch ( InvocationTargetException e ) {
 
-			if( e.getTargetException() != null ){
-				
+			if ( e.getTargetException() != null ) {
+
 				e.getTargetException().printStackTrace();
-			}
-			else{
-				
+			} else {
+
 				e.printStackTrace();
 			}
 		} catch ( Exception e ) {
-			
+
 			e.printStackTrace();
 		}
 

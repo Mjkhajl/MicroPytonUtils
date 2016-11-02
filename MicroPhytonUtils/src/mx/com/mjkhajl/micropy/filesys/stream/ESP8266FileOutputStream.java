@@ -10,9 +10,9 @@ import mx.com.mjkhajl.micropy.utils.FileItemUtils;
 
 public class ESP8266FileOutputStream extends OutputStream {
 
-	private int					index;
+	private int			index;
 	private ReplHelper	repl;
-	private byte[]				buffer;
+	private byte[]		buffer;
 
 	public ESP8266FileOutputStream( FileItem file, ReplHelper repl, int buffSize ) throws IOException {
 

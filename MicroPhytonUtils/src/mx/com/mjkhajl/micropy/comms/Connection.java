@@ -14,7 +14,7 @@ public interface Connection extends Closeable {
 	 *             if the specified connection does not exist or is not
 	 *             available
 	 */
-	public void connectTo( String connId ) throws IOException;
+	public Connection connectTo( String connId ) throws IOException;
 
 	/**
 	 * Connects to the first available autolooked up connection
@@ -22,7 +22,7 @@ public interface Connection extends Closeable {
 	 * @throws IOException
 	 *             if no connection is available
 	 */
-	public void connectToFirstAvailable() throws IOException;
+	public Connection connectToFirstAvailable() throws IOException;
 
 	/**
 	 * Writes the byte array, blocks this connection
@@ -39,7 +39,7 @@ public interface Connection extends Closeable {
 	 * @throws IOException
 	 */
 	public int read() throws IOException;
-	
+
 	/**
 	 * @return true if this connection is established
 	 */

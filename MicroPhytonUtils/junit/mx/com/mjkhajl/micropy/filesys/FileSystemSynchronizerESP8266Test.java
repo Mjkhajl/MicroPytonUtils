@@ -6,7 +6,6 @@ import org.junit.After;
 import org.junit.Before;
 import org.junit.Test;
 
-import mx.com.mjkhajl.micropy.comms.Connection;
 import mx.com.mjkhajl.micropy.comms.ReplHelper;
 import mx.com.mjkhajl.micropy.comms.SerialCommConnection;
 import mx.com.mjkhajl.micropy.filesys.impl.ESP8266FileSystemInterface;
@@ -19,8 +18,6 @@ import mx.com.mjkhajl.micropy.utils.CodeUtils;
 public class FileSystemSynchronizerESP8266Test {
 
 	FileSystemSynchronizer		sync;
-	LocalFileSystemInterface	localFs;
-	ESP8266FileSystemInterface	remoteFs;
 
 	private static final File	TEST_DIR_RO0T	= new File( "C:/Users/Luis Miguel/git/MicroPytonUtils/MicroPhytonUtils" );
 	private static final File	TEST_DIR_SYNC	= new File( TEST_DIR_RO0T, "webserver" );
@@ -36,16 +33,14 @@ public class FileSystemSynchronizerESP8266Test {
 		final int maxReplLineSize = 300;
 		final int maxFileChunk = 256;
 
-		Connection conn = new SerialCommConnection( bpsSpeed, dataBits, stopBits, parity, timeout );
-
-		conn.connectToFirstAvailable();
-
-		ReplHelper repl = new ReplHelper( timeout, maxReplLineSize, conn );
-
-		remoteFs = new ESP8266FileSystemInterface( repl, maxFileChunk );
-		localFs = new LocalFileSystemInterface();
-
-		sync = new FileSystemSynchronizerImpl( localFs, remoteFs );
+		sync = new FileSystemSynchronizerImpl(
+				new LocalFileSystemInterface(),
+				new ESP8266FileSystemInterface(
+						new ReplHelper(
+								timeout,
+								maxReplLineSize,
+								new SerialCommConnection( bpsSpeed, dataBits, stopBits, parity, timeout ) ),
+						maxFileChunk ) );
 	}
 
 	@Test
