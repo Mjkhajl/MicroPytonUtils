@@ -38,7 +38,32 @@ public class ReplHelper implements Closeable {
 
 		conn.connectToFirstAvailable();
 	}
+	
+	/**
+	 * Same as sendCommand, but if an exception is raised during the command
+	 * evaluation and/or execution it is ignored.
+	 * 
+	 * @param command
+	 *            command to execute in REPL
+	 * @return the reply from the REPL
+	 */
+	public String sendCommandIgnoreErrors( String command ) {
 
+		String reply = new String();
+
+		try {
+
+			// send the command and ignore any error
+			reply = sendCommand( command );
+
+		} catch ( Exception e ) {
+
+			e.printStackTrace();
+		}
+
+		return reply;
+	}
+	
 	/**
 	 * Sends the received command through the Connection of this REPL interface
 	 * and reads the reply, if command length is greater than maxCommandSize it
@@ -100,30 +125,6 @@ public class ReplHelper implements Closeable {
 		return reply.substring( begin, end );
 	}
 
-	/**
-	 * Same as sendCommand, but if an exception is raised during the command
-	 * evaluation and execution it is ignored.
-	 * 
-	 * @param command
-	 *            command to execute in REPL
-	 * @return the reply from the REPL
-	 */
-	public String sendCommandIgnoreErrors( String command ) {
-
-		String reply = new String();
-
-		try {
-
-			// send the command and ignore any error
-			reply = sendCommand( command );
-
-		} catch ( Exception e ) {
-
-			e.printStackTrace();
-		}
-
-		return reply;
-	}
 
 	@Override
 	public synchronized void close() throws IOException {
