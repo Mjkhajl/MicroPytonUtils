@@ -19,6 +19,18 @@ public class ReplHelper implements Closeable {
 	private Connection				conn				= null;
 	private final int				maxCommandSize;
 
+	/**
+	 * Creates a new REPL interface helper to send commands using the received
+	 * connection, it connects to the first connection available
+	 * 
+	 * @param timeout
+	 *            timeout to connect
+	 * @param maxCommandSize
+	 *            max length permitted for command length
+	 * @param conn
+	 *            connection to use to contact the remote REPL
+	 * @throws IOException
+	 */
 	public ReplHelper( long timeout, int maxCommandSize, Connection conn ) throws IOException {
 
 		this.conn = conn;
@@ -27,6 +39,17 @@ public class ReplHelper implements Closeable {
 		conn.connectToFirstAvailable();
 	}
 
+	/**
+	 * Sends the received command through the Connection of this REPL interface
+	 * and reads the reply, if command length is greater than maxCommandSize it
+	 * is split into smaller chunks of the original command and sent to the REPL
+	 * chunk by chunk.
+	 * 
+	 * @param command
+	 *            command to execute in REPL
+	 * @return the reply from the REPL
+	 * @throws IOException
+	 */
 	public synchronized String sendCommand( String command ) throws IOException {
 
 		// if the command string is too long the ESP8266 will hung... so we
@@ -77,6 +100,14 @@ public class ReplHelper implements Closeable {
 		return reply.substring( begin, end );
 	}
 
+	/**
+	 * Same as sendCommand, but if an exception is raised during the command
+	 * evaluation and execution it is ignored.
+	 * 
+	 * @param command
+	 *            command to execute in REPL
+	 * @return the reply from the REPL
+	 */
 	public String sendCommandIgnoreErrors( String command ) {
 
 		String reply = new String();
