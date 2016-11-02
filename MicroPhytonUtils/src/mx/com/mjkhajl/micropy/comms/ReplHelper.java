@@ -27,8 +27,6 @@ public class ReplHelper implements Closeable {
 
 	public synchronized String sendCommand( String command ) throws IOException {
 
-		System.out.print( ">>>" );
-
 		// if the command string is too long the ESP8266 will hung... so we
 		// split the string in chunks...
 		List<String> chunks = CodeUtils.tokenizeCommand( command, maxCommandSize );
@@ -36,8 +34,9 @@ public class ReplHelper implements Closeable {
 
 		for ( String chunk : chunks ) {
 
-			System.out.println( chunk );
+			System.out.println( ">>>" + chunk );
 			reply = sendCommandInternal( chunk );
+			System.out.println( ">" + reply );
 		}
 
 		return reply;
@@ -47,21 +46,33 @@ public class ReplHelper implements Closeable {
 
 		StringBuilder reply = new StringBuilder();
 
+		// write the command in the connection...
 		conn.write( command.getBytes() );
 		conn.write( CR_LF_B );
 
-		int data;
+		do {
 
-		while ( ( data = conn.read() ) != -1 ) {
+			// read data and append to reply until...
+			reply.append( (char) conn.read() );
 
-			reply.append( (char) data );
+		} while ( !PATTERN_END_RPLY.matcher( reply ).find() );
 
-			// matches end of reply...
-			if ( PATTERN_END_RPLY.matcher( reply ).find() )
-				break;
+		Matcher matcher = PATTERN_ERROR.matcher( reply );
+
+		// reply matches error pattern...
+		if ( matcher.find() ) {
+
+			// ...throw exception with received data
+			throw new RemoteReplException( matcher.group( 1 ), matcher.group( 3 ), matcher.group( 4 ) );
 		}
 
-		return cleanAndReturn( reply.toString() );
+		int crlfIndex = reply.indexOf( CR_LF_S );
+		// discard the first line to the end of the CRLF
+		int begin = ( crlfIndex != -1 ) ? ( crlfIndex + 2 ) : 0;
+		// discard the tail (...\s Continue ) (>>>\s New command )
+		int end = ( reply.length() > begin + 4 ) ? reply.length() - 4 : begin;
+
+		return reply.substring( begin, end );
 	}
 
 	public String sendCommandIgnoreErrors( String command ) {
@@ -77,31 +88,6 @@ public class ReplHelper implements Closeable {
 
 			e.printStackTrace();
 		}
-
-		return reply;
-	}
-
-	private String cleanAndReturn( String reply ) throws RemoteReplException {
-
-		Matcher matcher = PATTERN_ERROR.matcher( reply );
-
-		// reply matches error pattern...
-		if ( matcher.find() ) {
-
-			// ...throw exception with received data
-			throw new RemoteReplException( matcher.group( 1 ), matcher.group( 3 ), matcher.group( 4 ) );
-		}
-
-		int crlfIndex = reply.indexOf( CR_LF_S );
-
-		// discard the first line to the end of the CRLF
-		int begin = ( crlfIndex != -1 ) ? ( crlfIndex + 2 ) : 0;
-		// discard the tail (...\s Continue ) (>>>\s New command )
-		int end = ( reply.length() > begin + 4 ) ? reply.length() - 4 : begin;
-
-		reply = reply.substring( begin, end );
-
-		System.out.println( ">" + reply );
 
 		return reply;
 	}
