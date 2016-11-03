@@ -13,7 +13,6 @@ class Server:
 
         print( "starting...", self.host, ":", self.port )
         self.s = socket.socket( socket.AF_INET, socket.SOCK_STREAM )
-        print( socket.getaddrinfo( self.host, self.port ) )
         self.s.bind( socket.getaddrinfo( self.host, self.port )[0][4] )
         self.s.listen( 5 )
         counter = 0
