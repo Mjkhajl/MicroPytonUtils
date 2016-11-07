@@ -7,6 +7,8 @@ import mx.com.mjkhajl.micropy.comms.ReplHelper;
 import mx.com.mjkhajl.micropy.filesys.vo.FileItem;
 import mx.com.mjkhajl.micropy.utils.CodeUtils;
 import mx.com.mjkhajl.micropy.utils.FileItemUtils;
+import mx.com.mjkhajl.micropy.utils.Log;
+import mx.com.mjkhajl.micropy.utils.Log.LogLevel;
 
 public class ESP8266FileOutputStream extends OutputStream {
 
@@ -21,7 +23,9 @@ public class ESP8266FileOutputStream extends OutputStream {
 		this.buffer = new byte[buffSize];
 
 		// open the dest file in 8266
-		repl.sendCommand( "file = open('" + FileItemUtils.getFullPath( file ) + "', 'wb' )" );
+		String path = FileItemUtils.getFullPath( file );
+		Log.log( "open[W]:" + path, LogLevel.INFO );
+		repl.sendCommand( "file = open('" + path + "', 'wb' )" );
 	}
 
 	@Override

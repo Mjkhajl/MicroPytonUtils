@@ -8,14 +8,15 @@ import java.util.regex.Pattern;
 
 import mx.com.mjkhajl.micropy.comms.exception.RemoteReplException;
 import mx.com.mjkhajl.micropy.utils.CodeUtils;
+import mx.com.mjkhajl.micropy.utils.Log;
+import mx.com.mjkhajl.micropy.utils.Log.LogLevel;
 
 public class ReplHelper implements Closeable {
 
 	private static final String		CR_LF_S				= "\r\n";
-	private static final byte[]		CR_LF_B				= CR_LF_S.getBytes();
 	private static final Pattern	PATTERN_ERROR		= Pattern.compile( "^([^\n]+)\n([^\n]+\n)*([A-Z][a-zA-Z0-9]+Error)[:](.*)" );
-	private static final Pattern	PATTERN_END_RPLY	= Pattern.compile( "([>]{3})|([\\.]{3})\\s$" );
-
+	private static final byte[]		PATTERN_NEXT_B		= "\r\n>>> ".getBytes();
+	private static final byte[]		PATTERN_CONTINUE_B	= "\r\n... ".getBytes();
 	private Connection				conn				= null;
 	private final int				maxCommandSize;
 
@@ -38,7 +39,7 @@ public class ReplHelper implements Closeable {
 
 		conn.connectToFirstAvailable();
 	}
-	
+
 	/**
 	 * Same as sendCommand, but if an exception is raised during the command
 	 * evaluation and/or execution it is ignored.
@@ -58,12 +59,12 @@ public class ReplHelper implements Closeable {
 
 		} catch ( Exception e ) {
 
-			e.printStackTrace();
+			Log.log( e, LogLevel.ERROR );
 		}
 
 		return reply;
 	}
-	
+
 	/**
 	 * Sends the received command through the Connection of this REPL interface
 	 * and reads the reply, if command length is greater than maxCommandSize it
@@ -84,9 +85,9 @@ public class ReplHelper implements Closeable {
 
 		for ( String chunk : chunks ) {
 
-			System.out.println( ">>>" + chunk );
+			Log.log( "C:" + chunk, LogLevel.DEBUG );
 			reply = sendCommandInternal( chunk );
-			System.out.println( ">" + reply );
+			Log.log( "R:" + reply, LogLevel.DEBUG );
 		}
 
 		return reply;
@@ -94,26 +95,27 @@ public class ReplHelper implements Closeable {
 
 	private synchronized String sendCommandInternal( String command ) throws IOException {
 
-		StringBuilder reply = new StringBuilder();
+		byte[] buffer = new byte[4096];
 
 		// write the command in the connection...
-		conn.write( command.getBytes() );
-		conn.write( CR_LF_B );
+		conn.write( ( command + CR_LF_S ).getBytes() );
+		int i = 0;
 
 		do {
 
-			// read data and append to reply until...
-			reply.append( (char) conn.read() );
+			buffer[i++] = (byte) conn.read();
 
-		} while ( !PATTERN_END_RPLY.matcher( reply ).find() );
+		} while ( !replyMatchesEnd( buffer, i ) );
 
-		Matcher matcher = PATTERN_ERROR.matcher( reply );
+		String reply = new String( buffer );
+
+		Log.log( reply, LogLevel.DEBUG );
 
 		// reply matches error pattern...
-		if ( matcher.find() ) {
+		if ( reply.indexOf( "\r\nTraceback (" ) != -1 ) {
 
 			// ...throw exception with received data
-			throw new RemoteReplException( matcher.group( 1 ), matcher.group( 3 ), matcher.group( 4 ) );
+			throw parseException( reply );
 		}
 
 		int crlfIndex = reply.indexOf( CR_LF_S );
@@ -125,6 +127,30 @@ public class ReplHelper implements Closeable {
 		return reply.substring( begin, end );
 	}
 
+	private boolean replyMatchesEnd( byte[] buffer, int length ) {
+
+		if ( length < 6 )
+			return false;
+
+		length = length - 6;
+		for ( int i = 0; i < 6; i++ ) {
+
+			if ( buffer[length + i] != PATTERN_NEXT_B[i] && buffer[length + i] != PATTERN_CONTINUE_B[i] )
+				return false;
+		}
+
+		return true;
+	}
+
+	private RemoteReplException parseException( String reply ) {
+
+		Log.log( reply, LogLevel.ERROR );
+
+		Matcher matcher = PATTERN_ERROR.matcher( reply );
+
+		matcher.find();
+		return new RemoteReplException( matcher.group( 1 ), matcher.group( 3 ), matcher.group( 4 ) );
+	}
 
 	@Override
 	public synchronized void close() throws IOException {

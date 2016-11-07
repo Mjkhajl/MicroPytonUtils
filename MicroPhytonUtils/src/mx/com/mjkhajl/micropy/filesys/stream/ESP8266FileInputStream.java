@@ -7,6 +7,8 @@ import mx.com.mjkhajl.micropy.comms.ReplHelper;
 import mx.com.mjkhajl.micropy.filesys.vo.FileItem;
 import mx.com.mjkhajl.micropy.utils.CodeUtils;
 import mx.com.mjkhajl.micropy.utils.FileItemUtils;
+import mx.com.mjkhajl.micropy.utils.Log;
+import mx.com.mjkhajl.micropy.utils.Log.LogLevel;
 
 public class ESP8266FileInputStream extends InputStream {
 
@@ -21,7 +23,9 @@ public class ESP8266FileInputStream extends InputStream {
 		this.buffer = new int[buffSize];
 
 		// open the file in 8266
-		repl.sendCommand( "file = open('" + FileItemUtils.getFullPath( file ) + "', 'rb' )" );
+		String path = FileItemUtils.getFullPath( file );
+		Log.log( "open[R]:" + path, LogLevel.INFO );
+		repl.sendCommand( "file = open('" + path + "', 'rb' )" );
 	}
 
 	@Override

@@ -3,6 +3,7 @@ package mx.com.mjkhajl.micropy.utils;
 import java.io.IOException;
 
 import mx.com.mjkhajl.micropy.comms.ReplHelper;
+import mx.com.mjkhajl.micropy.comms.ReplJavaCommandConsole;
 import mx.com.mjkhajl.micropy.comms.SerialCommConnection;
 import mx.com.mjkhajl.micropy.filesys.FileSystemSynchronizer;
 import mx.com.mjkhajl.micropy.filesys.impl.ESP8266FileSystemInterface;
@@ -10,12 +11,15 @@ import mx.com.mjkhajl.micropy.filesys.impl.FileSystemSynchronizerImpl;
 import mx.com.mjkhajl.micropy.filesys.impl.LocalFileSystemInterface;
 import mx.com.mjkhajl.micropy.filesys.vo.FileItem;
 import mx.com.mjkhajl.micropy.filesys.vo.FileItem.Nature;
+import mx.com.mjkhajl.micropy.utils.Log.LogLevel;
 import mx.com.mjkhajl.micropy.utils.cmddoc.CommandLineUtils;
 import mx.com.mjkhajl.micropy.utils.cmddoc.CommandlineMethod;
 
 public class PythonUtilsMain {
 
 	public static void main( String[] args ) throws Exception {
+
+		Log.setLogLevelFromArgs( args );
 
 		PythonUtilsMain main = new PythonUtilsMain();
 
@@ -47,11 +51,11 @@ public class PythonUtilsMain {
 
 			try {
 
-				sync = buildSynchronizer();
+				sync = buildSynchronizer( buildRepl() );
 
 				sync.synchronizeDir( new FileItem( args[1], Nature.LOCAL ), new FileItem( args[2], Nature.REMOTE ) );
 
-				System.out.println( "Synchronization success!!!" );
+				Log.log( "Synchronization success!!!", LogLevel.INFO );
 
 				return;
 			} catch ( Exception e ) {
@@ -68,7 +72,50 @@ public class PythonUtilsMain {
 		throw new IllegalArgumentException( "usage: -sync <src-local-path> <dest-remote-path>" );
 	}
 
-	private FileSystemSynchronizer buildSynchronizer() throws IOException, Exception {
+	/* @formatter:off */
+	@CommandlineMethod( 
+			description = 
+				"Starts a REPL console with special java commands to synchronizes a local dir into a remote dir in the ESP8266, " +
+				"ESP should be connected via USB; Special command 'java sync' to execute file synchronization inside the console", 
+			usage       = " startSyncConsole <localdir> <remotedir>", 
+			argNames    = { 
+					"localdir", 
+					"remotedir" }, 
+			argDescriptions = {
+					"local dir in the file system that will be used as source, can be a relative path", 
+					"remote dir in the ESP8266 that will be updated according to the local dir provided, should be an absolute path" } )
+	/* @formatter:on */
+	public void startSyncConsole( String args[] ) {
+
+		if ( args.length >= 3 ) {
+
+			FileSystemSynchronizer sync = null;
+			ReplHelper repl = null;
+
+			try {
+
+				repl = buildRepl();
+				sync = buildSynchronizer( repl );
+
+				ReplJavaCommandConsole console = new ReplJavaCommandConsole( repl, sync );
+
+				console.start( new FileItem( args[1], Nature.LOCAL ), new FileItem( args[2], Nature.REMOTE ) );
+				return;
+			} catch ( Exception e ) {
+
+				e.printStackTrace();
+			} finally {
+
+				CodeUtils.close( sync, repl );
+			}
+		}
+
+		CommandLineUtils.printCommandHelp( this, args[0], System.out );
+
+		throw new IllegalArgumentException( "usage: -sync <src-local-path> <dest-remote-path>" );
+	}
+
+	private ReplHelper buildRepl() throws IOException, Exception {
 
 		final int bpsSpeed = 115200;
 		final int dataBits = 8;
@@ -76,16 +123,15 @@ public class PythonUtilsMain {
 		final int parity = 0; // none see @javax.comm.SerialPort
 		final int timeout = 5000;
 		final int maxReplLineSize = 300;
+
+		return new ReplHelper( timeout, maxReplLineSize, new SerialCommConnection( bpsSpeed, dataBits, stopBits, parity, timeout ) );
+	}
+
+	private FileSystemSynchronizer buildSynchronizer( ReplHelper repl ) throws IOException, Exception {
+
 		final int maxFileChunk = 256;
 
-		return new FileSystemSynchronizerImpl(
-				new LocalFileSystemInterface(),
-				new ESP8266FileSystemInterface(
-						new ReplHelper(
-								timeout,
-								maxReplLineSize,
-								new SerialCommConnection( bpsSpeed, dataBits, stopBits, parity, timeout ) ),
-						maxFileChunk ) );
+		return new FileSystemSynchronizerImpl( new LocalFileSystemInterface(), new ESP8266FileSystemInterface( repl, maxFileChunk ) );
 	}
 
 	@CommandlineMethod( description = "Prints this help", usage = " help " )

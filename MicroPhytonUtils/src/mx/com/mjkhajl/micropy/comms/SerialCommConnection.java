@@ -10,6 +10,8 @@ import javax.comm.NoSuchPortException;
 import javax.comm.SerialPort;
 
 import mx.com.mjkhajl.micropy.utils.CodeUtils;
+import mx.com.mjkhajl.micropy.utils.Log;
+import mx.com.mjkhajl.micropy.utils.Log.LogLevel;
 
 public class SerialCommConnection implements Connection {
 
@@ -103,20 +105,22 @@ public class SerialCommConnection implements Connection {
 				// name...
 				port = (SerialPort) portId.open( String.valueOf( this ), (int) timeout );
 				port.setSerialPortParams( freq, dataBits, stopBits, parity );
+				port.setInputBufferSize( 256 );
+				port.setOutputBufferSize( 256 );
 
 				outStream = port.getOutputStream();
 				inStream = port.getInputStream();
 
 				connected = true;
 
-				System.out.println( "Connected to: " + port.getName() );
+				Log.log( "Connected to: " + port.getName(), LogLevel.INFO );
 
 				return true;
 			}
 		} catch ( Exception e ) {
 
 			// port failed, return false...
-			e.printStackTrace();
+			Log.log( e, LogLevel.ERROR );
 		}
 		return false;
 	}

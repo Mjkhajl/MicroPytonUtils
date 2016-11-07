@@ -13,6 +13,8 @@ import mx.com.mjkhajl.micropy.filesys.vo.FileItem;
 import mx.com.mjkhajl.micropy.filesys.vo.FileItem.Nature;
 import mx.com.mjkhajl.micropy.utils.CodeUtils;
 import mx.com.mjkhajl.micropy.utils.FileItemUtils;
+import mx.com.mjkhajl.micropy.utils.Log;
+import mx.com.mjkhajl.micropy.utils.Log.LogLevel;
 
 public class FileSystemSynchronizerImpl implements FileSystemSynchronizer {
 
@@ -67,6 +69,7 @@ public class FileSystemSynchronizerImpl implements FileSystemSynchronizer {
 			// if file is not in src...
 			if ( !srcFiles.contains( fileName ) ) {
 				// ...delete indest
+				Log.log( "delete: " + fileName, LogLevel.INFO );
 				delete( new FileItem( desDir, fileName ) );
 			}
 		}
@@ -96,12 +99,12 @@ public class FileSystemSynchronizerImpl implements FileSystemSynchronizer {
 
 		if ( !exists( destFile ) || !equals( srcFile, destFile ) ) {
 
-			System.out.println( "******** Sync File..." + FileItemUtils.getFullPath( destFile ) );
+			Log.log( "******** Sync File..." + FileItemUtils.getFullPath( destFile ), LogLevel.INFO );
 			copyFile( srcFile, destFile );
 			return;
 		} else {
 
-			System.out.println( "******** Nothing to sync..." + FileItemUtils.getFullPath( destFile ) );
+			Log.log( "******** Nothing to sync..." + FileItemUtils.getFullPath( destFile ), LogLevel.INFO );
 		}
 	}
 

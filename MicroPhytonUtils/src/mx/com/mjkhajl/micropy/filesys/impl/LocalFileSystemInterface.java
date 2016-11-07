@@ -12,6 +12,8 @@ import java.util.List;
 import mx.com.mjkhajl.micropy.filesys.FileSystemInterface;
 import mx.com.mjkhajl.micropy.filesys.vo.FileItem;
 import mx.com.mjkhajl.micropy.utils.FileItemUtils;
+import mx.com.mjkhajl.micropy.utils.Log;
+import mx.com.mjkhajl.micropy.utils.Log.LogLevel;
 
 public class LocalFileSystemInterface implements FileSystemInterface {
 
@@ -31,7 +33,7 @@ public class LocalFileSystemInterface implements FileSystemInterface {
 	public InputStream openFileRead( FileItem file ) throws IOException {
 
 		File lfile = getFile( file );
-		System.out.println( "open[R]:" + lfile.getCanonicalPath() );
+		Log.log( "open[R]:" + lfile.getCanonicalPath(), LogLevel.INFO );
 		return new FileInputStream( lfile );
 	}
 
@@ -39,7 +41,7 @@ public class LocalFileSystemInterface implements FileSystemInterface {
 	public OutputStream openFileWrite( FileItem file ) throws IOException {
 
 		File lfile = getFile( file );
-		System.out.println( "open[W]: " + lfile.getCanonicalPath() );
+		Log.log( "open[W]: " + lfile.getCanonicalPath(), LogLevel.INFO );
 		return new FileOutputStream( lfile );
 	}
 
