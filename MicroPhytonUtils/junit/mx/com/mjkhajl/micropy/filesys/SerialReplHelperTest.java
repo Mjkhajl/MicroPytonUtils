@@ -8,6 +8,8 @@ import mx.com.mjkhajl.micropy.comms.ReplHelper;
 import mx.com.mjkhajl.micropy.comms.SerialCommConnection;
 import mx.com.mjkhajl.micropy.comms.exception.RemoteReplException;
 import mx.com.mjkhajl.micropy.utils.CodeUtils;
+import mx.com.mjkhajl.micropy.utils.Log;
+import mx.com.mjkhajl.micropy.utils.Log.LogLevel;
 
 public class SerialReplHelperTest {
 
@@ -27,6 +29,8 @@ public class SerialReplHelperTest {
 				timeout,
 				maxReplLineSize,
 				new SerialCommConnection( bpsSpeed, dataBits, stopBits, parity, timeout ) );
+
+		Log.GL_LOG_LEVEL = LogLevel.DEBUG;
 	}
 
 	@Test

@@ -105,7 +105,12 @@ public class SerialCommConnection implements Connection {
 				// name...
 				port = (SerialPort) portId.open( String.valueOf( this ), (int) timeout );
 				port.setSerialPortParams( freq, dataBits, stopBits, parity );
-				port.disableReceiveThreshold();
+				port.enableReceiveTimeout( 0 );
+				Log.log( "receiveframming: " + port.isReceiveFramingEnabled(), LogLevel.DEBUG );
+				Log.log( "getReceiveTimeout: " + port.getReceiveTimeout(), LogLevel.DEBUG );
+				Log.log( "getReceiveThreshold: " + port.getReceiveThreshold(), LogLevel.DEBUG );
+				Log.log( "getInputBufferSize: " + port.getInputBufferSize(), LogLevel.DEBUG );
+				Log.log( "getOutputBufferSize: " + port.getOutputBufferSize(), LogLevel.DEBUG );
 
 				outStream = port.getOutputStream();
 				inStream = port.getInputStream();
@@ -125,16 +130,22 @@ public class SerialCommConnection implements Connection {
 	}
 
 	@Override
-	public synchronized void write( byte[] data ) throws IOException {
+	public void write( byte[] data ) throws IOException {
 
-		outStream.write( data );
-		outStream.flush();
+		synchronized ( outStream ) {
+
+			outStream.write( data );
+			outStream.flush();
+		}
 	}
 
 	@Override
-	public synchronized int read() throws IOException {
+	public int read() throws IOException {
 
-		return inStream.read();
+		synchronized ( inStream ) {
+
+			return inStream.read();
+		}
 	}
 
 	@Override

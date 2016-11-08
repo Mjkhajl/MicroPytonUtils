@@ -41,12 +41,13 @@ public class Log {
 
 		if ( GL_LOG_LEVEL.ordinal() >= level.ordinal() ) {
 
-			Object message = o;
+			StringWriter message = new StringWriter();
+			
+			message.write( String.valueOf( o ) );
 			
 			if ( o instanceof Throwable ) {
 
-				message = new StringWriter();
-				( (Throwable) o ).printStackTrace( new PrintWriter( (StringWriter) o ) );
+				( (Throwable) o ).printStackTrace( new PrintWriter( message ) );
 			}
 
 			System.out.println( LOG_DATE_FORMAT.format( new Date() ) + "[" + level + "]" + message );

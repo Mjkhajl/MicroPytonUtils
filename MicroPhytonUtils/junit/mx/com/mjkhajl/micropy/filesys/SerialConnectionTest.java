@@ -1,12 +1,13 @@
 package mx.com.mjkhajl.micropy.filesys;
 
-import java.util.Calendar;
+import java.io.IOException;
 
 import org.junit.Before;
 import org.junit.Test;
 
 import mx.com.mjkhajl.micropy.comms.SerialCommConnection;
 import mx.com.mjkhajl.micropy.utils.Log;
+import mx.com.mjkhajl.micropy.utils.Log.LogLevel;
 
 public class SerialConnectionTest {
 
@@ -21,22 +22,43 @@ public class SerialConnectionTest {
 		final int timeout = 5000;
 
 		conn = new SerialCommConnection( bpsSpeed, dataBits, stopBits, parity, timeout );
+		Log.GL_LOG_LEVEL = LogLevel.DEBUG;
 	}
 
 	@Test
 	public void testSpeed() throws Exception {
 
-		Calendar cal = Calendar.getInstance();
+		// Calendar cal = Calendar.getInstance();
 		Log.log( "start" );
 		conn.connectToFirstAvailable();
+		Log.log( "start reader" );
+		new Thread( new ReadWorker() ).start();
 		Log.log( "---send---" );
 		conn.write( "a\r\n".getBytes() );
-		Log.log( "---rec---" );
-		//long startMillis = cal.getTimeInMillis();
-		int dat = 0;
-		while ( ( dat = conn.read() ) != -1 ) {
-			Log.log( (char) dat );
+		/*
+		 * int dat = 0; while ( ( dat = conn.read() ) != -1 ) { Log.log( (char)
+		 * dat ); }
+		 */
+		Thread.sleep( 30 );
+		Log.log( "end" );
+	}
+
+	class ReadWorker implements Runnable {
+
+		@Override
+		public void run() {
+
+			try {
+				int data;
+				while ( true ) {
+					data = conn.read();
+					if ( data != -1 )
+						Log.log( (char) data );
+				}
+			} catch ( IOException e ) {
+
+				Log.log( e );
+			}
 		}
-		//Log.log( "total: " + ( cal.getTimeInMillis() - startMillis ) );
 	}
 }

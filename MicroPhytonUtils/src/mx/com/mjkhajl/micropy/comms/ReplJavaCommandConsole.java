@@ -33,19 +33,23 @@ public class ReplJavaCommandConsole {
 
 					case "java sync":
 						sync.synchronizeDir( src, dest );
+						System.out.print( ">>>" );
 						continue;
 					case "log level":
 						System.out.println( "set level?" );
 						Log.setLogLevelFromArgs( new String[] { reader.readLine() } );
+						System.out.print( ">>>" );
+						continue;
+					case "esc":
+						System.out.print( repl.sendCommand( String.valueOf( (char) 03 ) ) );
 						continue;
 					default:
-						System.out.println( repl.sendCommand( line ) );
+						System.out.print( repl.sendCommand( line ) );
 				}
 			} catch ( Exception e ) {
 
 				Log.log( e, LogLevel.ERROR );
 			}
-			System.out.print( ">>>" );
 		}
 
 		Log.log( "console closed...", LogLevel.INFO );

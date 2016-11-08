@@ -17,6 +17,7 @@ public class ReplHelper implements Closeable {
 	private static final Pattern	PATTERN_ERROR		= Pattern.compile( "^([^\n]+)\n([^\n]+\n)*([A-Z][a-zA-Z0-9]+Error)[:](.*)" );
 	private static final byte[]		PATTERN_NEXT_B		= "\r\n>>> ".getBytes();
 	private static final byte[]		PATTERN_CONTINUE_B	= "\r\n... ".getBytes();
+	private static final int        READ_BUFFER_SIZE    = 256;
 	private Connection				conn				= null;
 	private final int				maxCommandSize;
 
@@ -95,17 +96,23 @@ public class ReplHelper implements Closeable {
 
 	private synchronized String sendCommandInternal( String command ) throws IOException {
 
-		byte[] buffer = new byte[4096];
-
+		byte[] buffer = new byte[ READ_BUFFER_SIZE ];
 		// write the command in the connection...
 		conn.write( ( command + CR_LF_S ).getBytes() );
-		int i = 0;
+		int length = 0;
 
 		do {
-
-			buffer[i++] = (byte) conn.read();
-
-		} while ( !replyMatchesEnd( buffer, i ) );
+			int data = conn.read();
+			if ( data != -1 ) {
+				if ( length >= buffer.length ) {
+					// grow the buffer if it is full....
+					byte[] newBuffer = new byte[buffer.length + READ_BUFFER_SIZE];
+					System.arraycopy( buffer, 0, newBuffer, 0, buffer.length );
+					buffer = newBuffer;
+				}
+				buffer[length++] = (byte) data;
+			}
+		} while ( !replyMatchesEnd( buffer, length ) );
 
 		String reply = new String( buffer );
 
@@ -121,10 +128,8 @@ public class ReplHelper implements Closeable {
 		int crlfIndex = reply.indexOf( CR_LF_S );
 		// discard the first line to the end of the CRLF
 		int begin = ( crlfIndex != -1 ) ? ( crlfIndex + 2 ) : 0;
-		// discard the tail (...\s Continue ) (>>>\s New command )
-		int end = ( reply.length() > begin + 4 ) ? reply.length() - 4 : begin;
 
-		return reply.substring( begin, end );
+		return reply.substring( begin );
 	}
 
 	private boolean replyMatchesEnd( byte[] buffer, int length ) {
