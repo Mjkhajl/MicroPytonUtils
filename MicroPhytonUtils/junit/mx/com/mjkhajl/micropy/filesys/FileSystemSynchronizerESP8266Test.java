@@ -37,7 +37,6 @@ public class FileSystemSynchronizerESP8266Test {
 				new LocalFileSystemInterface(),
 				new ESP8266FileSystemInterface(
 						new ReplHelper(
-								timeout,
 								maxReplLineSize,
 								new SerialCommConnection( bpsSpeed, dataBits, stopBits, parity, timeout ) ),
 						maxFileChunk ) );

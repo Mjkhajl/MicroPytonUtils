@@ -2,6 +2,7 @@ package mx.com.mjkhajl.micropy.utils;
 
 import java.io.IOException;
 
+import mx.com.mjkhajl.micropy.comms.Connection;
 import mx.com.mjkhajl.micropy.comms.ReplHelper;
 import mx.com.mjkhajl.micropy.comms.ReplJavaCommandConsole;
 import mx.com.mjkhajl.micropy.comms.SerialCommConnection;
@@ -51,7 +52,7 @@ public class PythonUtilsMain {
 
 			try {
 
-				sync = buildSynchronizer( buildRepl() );
+				sync = buildSynchronizer( buildRepl( buildConection() ) );
 
 				sync.synchronizeDir( new FileItem( args[1], Nature.LOCAL ), new FileItem( args[2], Nature.REMOTE ) );
 
@@ -90,14 +91,14 @@ public class PythonUtilsMain {
 		if ( args.length >= 3 ) {
 
 			FileSystemSynchronizer sync = null;
-			ReplHelper repl = null;
+			Connection conn = null;
 
 			try {
 
-				repl = buildRepl();
-				sync = buildSynchronizer( repl );
+				conn = buildConection();
+				sync = buildSynchronizer( buildRepl( conn ) );
 
-				ReplJavaCommandConsole console = new ReplJavaCommandConsole( repl, sync );
+				ReplJavaCommandConsole console = new ReplJavaCommandConsole( conn, sync );
 
 				console.start( new FileItem( args[1], Nature.LOCAL ), new FileItem( args[2], Nature.REMOTE ) );
 				return;
@@ -106,7 +107,7 @@ public class PythonUtilsMain {
 				e.printStackTrace();
 			} finally {
 
-				CodeUtils.close( sync, repl );
+				CodeUtils.close( sync, conn );
 			}
 		}
 
@@ -115,16 +116,22 @@ public class PythonUtilsMain {
 		throw new IllegalArgumentException( "usage: -sync <src-local-path> <dest-remote-path>" );
 	}
 
-	private ReplHelper buildRepl() throws IOException, Exception {
+	private SerialCommConnection buildConection() throws IOException, Exception {
 
 		final int bpsSpeed = 115200;
 		final int dataBits = 8;
 		final int stopBits = 1;
 		final int parity = 0; // none see @javax.comm.SerialPort
 		final int timeout = 5000;
+
+		return new SerialCommConnection( bpsSpeed, dataBits, stopBits, parity, timeout );
+	}
+
+	private ReplHelper buildRepl( Connection conn ) throws IOException, Exception {
+
 		final int maxReplLineSize = 300;
 
-		return new ReplHelper( timeout, maxReplLineSize, new SerialCommConnection( bpsSpeed, dataBits, stopBits, parity, timeout ) );
+		return new ReplHelper( maxReplLineSize, conn );
 	}
 
 	private FileSystemSynchronizer buildSynchronizer( ReplHelper repl ) throws IOException, Exception {

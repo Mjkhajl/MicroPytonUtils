@@ -11,12 +11,12 @@ import mx.com.mjkhajl.micropy.utils.Log.LogLevel;
 
 public class ReplJavaCommandConsole {
 
-	private final ReplHelper				repl;
+	private final Connection				conn;
 	private final FileSystemSynchronizer	sync;
 
-	public ReplJavaCommandConsole( ReplHelper repl, FileSystemSynchronizer sync ) {
+	public ReplJavaCommandConsole( Connection conn, FileSystemSynchronizer sync ) {
 
-		this.repl = repl;
+		this.conn = conn;
 		this.sync = sync;
 	}
 
@@ -26,14 +26,20 @@ public class ReplJavaCommandConsole {
 
 		String line;
 
+		ReadWorker replReader = new ReadWorker();
+
+		new Thread( replReader ).start();
+
 		while ( !"exit".equals( line = reader.readLine() ) ) {
 
 			try {
 				switch ( line ) {
 
 					case "java sync":
+						replReader.setWaiting( true );
 						sync.synchronizeDir( src, dest );
 						System.out.print( ">>>" );
+						replReader.setWaiting( false );
 						continue;
 					case "log level":
 						System.out.println( "set level?" );
@@ -41,17 +47,45 @@ public class ReplJavaCommandConsole {
 						System.out.print( ">>>" );
 						continue;
 					case "esc":
-						System.out.print( repl.sendCommand( String.valueOf( (char) 03 ) ) );
+						conn.write( new byte[] { 03 } );
 						continue;
 					default:
-						System.out.print( repl.sendCommand( line ) );
+						conn.write( (line+"\r\n").getBytes() );
 				}
 			} catch ( Exception e ) {
+
+				Log.log( String.valueOf( e ), LogLevel.ERROR );
+			}
+		}
+
+		Log.log( "console closed...", LogLevel.INFO );
+	}
+
+	class ReadWorker implements Runnable {
+
+		private boolean waiting = false;
+
+		@Override
+		public void run() {
+
+			try {
+
+				int dat = 0;
+				while ( true ) {
+
+					if ( !waiting && ( dat = conn.read() ) != -1 ) {
+
+						System.out.print( (char) dat );
+					}
+				}
+			} catch ( IOException e ) {
 
 				Log.log( e, LogLevel.ERROR );
 			}
 		}
 
-		Log.log( "console closed...", LogLevel.INFO );
+		public void setWaiting( boolean waiting ) {
+			this.waiting = waiting;
+		}
 	}
 }

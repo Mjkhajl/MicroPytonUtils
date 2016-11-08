@@ -2,6 +2,7 @@ package mx.com.mjkhajl.micropy.comms;
 
 import java.io.Closeable;
 import java.io.IOException;
+import java.util.Arrays;
 import java.util.List;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
@@ -15,9 +16,7 @@ public class ReplHelper implements Closeable {
 
 	private static final String		CR_LF_S				= "\r\n";
 	private static final Pattern	PATTERN_ERROR		= Pattern.compile( "^([^\n]+)\n([^\n]+\n)*([A-Z][a-zA-Z0-9]+Error)[:](.*)" );
-	private static final byte[]		PATTERN_NEXT_B		= "\r\n>>> ".getBytes();
-	private static final byte[]		PATTERN_CONTINUE_B	= "\r\n... ".getBytes();
-	private static final int        READ_BUFFER_SIZE    = 256;
+	private static final int		READ_BUFFER_SIZE	= 256;
 	private Connection				conn				= null;
 	private final int				maxCommandSize;
 
@@ -25,15 +24,13 @@ public class ReplHelper implements Closeable {
 	 * Creates a new REPL interface helper to send commands using the received
 	 * connection, it connects to the first connection available
 	 * 
-	 * @param timeout
-	 *            timeout to connect
 	 * @param maxCommandSize
 	 *            max length permitted for command length
 	 * @param conn
 	 *            connection to use to contact the remote REPL
 	 * @throws IOException
 	 */
-	public ReplHelper( long timeout, int maxCommandSize, Connection conn ) throws IOException {
+	public ReplHelper( int maxCommandSize, Connection conn ) throws IOException {
 
 		this.conn = conn;
 		this.maxCommandSize = maxCommandSize;
@@ -96,26 +93,10 @@ public class ReplHelper implements Closeable {
 
 	private synchronized String sendCommandInternal( String command ) throws IOException {
 
-		byte[] buffer = new byte[ READ_BUFFER_SIZE ];
 		// write the command in the connection...
 		conn.write( ( command + CR_LF_S ).getBytes() );
-		int length = 0;
 
-		do {
-			int data = conn.read();
-			if ( data != -1 ) {
-				if ( length >= buffer.length ) {
-					// grow the buffer if it is full....
-					byte[] newBuffer = new byte[buffer.length + READ_BUFFER_SIZE];
-					System.arraycopy( buffer, 0, newBuffer, 0, buffer.length );
-					buffer = newBuffer;
-				}
-				buffer[length++] = (byte) data;
-			}
-		} while ( !replyMatchesEnd( buffer, length ) );
-
-		String reply = new String( buffer );
-
+		String reply = readReply();
 		Log.log( reply, LogLevel.DEBUG );
 
 		// reply matches error pattern...
@@ -132,19 +113,37 @@ public class ReplHelper implements Closeable {
 		return reply.substring( begin );
 	}
 
+	private String readReply() throws IOException {
+
+		byte[] buffer = new byte[READ_BUFFER_SIZE];
+		int length = 0;
+
+		while ( !replyMatchesEnd( buffer, length ) ) {
+			int data = conn.read();
+			if ( data != -1 ) {
+				if ( length >= buffer.length ) {
+					// grow the buffer if it is full....
+					buffer = Arrays.copyOf( buffer, buffer.length + READ_BUFFER_SIZE );
+				}
+				buffer[length++] = (byte) data;
+			}
+		}
+
+		return new String( Arrays.copyOf( buffer, length ) );
+	}
+
 	private boolean replyMatchesEnd( byte[] buffer, int length ) {
 
 		if ( length < 6 )
 			return false;
 
-		length = length - 6;
-		for ( int i = 0; i < 6; i++ ) {
+		int start = length - 6;
+		int midVal = buffer[start + 1] | buffer[start + 2] | buffer[start + 3];
 
-			if ( buffer[length + i] != PATTERN_NEXT_B[i] && buffer[length + i] != PATTERN_CONTINUE_B[i] )
-				return false;
-		}
-
-		return true;
+		return buffer[start] == '\r' &&
+				buffer[start + 1] == '\n' &&
+				( midVal == '>' || midVal == '.' ) &&
+				buffer[start + 5] == ' ';
 	}
 
 	private RemoteReplException parseException( String reply ) {

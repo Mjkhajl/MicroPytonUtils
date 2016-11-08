@@ -26,7 +26,6 @@ public class SerialReplHelperTest {
 		final int maxReplLineSize = 300;
 
 		repl = new ReplHelper(
-				timeout,
 				maxReplLineSize,
 				new SerialCommConnection( bpsSpeed, dataBits, stopBits, parity, timeout ) );
 
