@@ -39,19 +39,15 @@ public class Log {
 
 	public static <T> void log( T o, LogLevel level ) {
 
-		String message;
-
-		if ( o instanceof Throwable ) {
-
-			StringWriter writer = new StringWriter();
-			( (Throwable) o ).printStackTrace( new PrintWriter( writer ) );
-			message = writer.toString();
-		} else {
-
-			message = String.valueOf( o );
-		}
-
 		if ( GL_LOG_LEVEL.ordinal() >= level.ordinal() ) {
+
+			Object message = o;
+			
+			if ( o instanceof Throwable ) {
+
+				message = new StringWriter();
+				( (Throwable) o ).printStackTrace( new PrintWriter( (StringWriter) o ) );
+			}
 
 			System.out.println( LOG_DATE_FORMAT.format( new Date() ) + "[" + level + "]" + message );
 		}

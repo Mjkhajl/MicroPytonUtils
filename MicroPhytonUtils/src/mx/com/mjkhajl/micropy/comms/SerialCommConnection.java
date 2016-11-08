@@ -105,8 +105,7 @@ public class SerialCommConnection implements Connection {
 				// name...
 				port = (SerialPort) portId.open( String.valueOf( this ), (int) timeout );
 				port.setSerialPortParams( freq, dataBits, stopBits, parity );
-				port.setInputBufferSize( 256 );
-				port.setOutputBufferSize( 256 );
+				port.disableReceiveThreshold();
 
 				outStream = port.getOutputStream();
 				inStream = port.getInputStream();

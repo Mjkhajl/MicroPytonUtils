@@ -1,5 +1,7 @@
 package mx.com.mjkhajl.micropy.filesys;
 
+import java.util.Calendar;
+
 import org.junit.Before;
 import org.junit.Test;
 
@@ -23,15 +25,18 @@ public class SerialConnectionTest {
 
 	@Test
 	public void testSpeed() throws Exception {
+
+		Calendar cal = Calendar.getInstance();
 		Log.log( "start" );
 		conn.connectToFirstAvailable();
-		Log.log( "send" );
+		Log.log( "---send---" );
 		conn.write( "a\r\n".getBytes() );
-		Log.log( "rec" );
+		Log.log( "---rec---" );
+		//long startMillis = cal.getTimeInMillis();
 		int dat = 0;
 		while ( ( dat = conn.read() ) != -1 ) {
 			Log.log( (char) dat );
 		}
-		Log.log( "end" );
+		//Log.log( "total: " + ( cal.getTimeInMillis() - startMillis ) );
 	}
 }
