@@ -1,8 +1,7 @@
 package mx.com.mjkhajl.micropy.comms;
 
-import java.io.BufferedReader;
 import java.io.IOException;
-import java.io.InputStreamReader;
+import java.util.Scanner;
 
 import mx.com.mjkhajl.micropy.filesys.FileSystemSynchronizer;
 import mx.com.mjkhajl.micropy.filesys.vo.FileItem;
@@ -22,15 +21,13 @@ public class ReplJavaCommandConsole {
 
 	public void start( FileItem src, FileItem dest ) throws IOException {
 
-		BufferedReader reader = new BufferedReader( new InputStreamReader( System.in ) );
-
-		String line;
-
+		Scanner scanner = new Scanner( System.in );
 		ReadWorker replReader = new ReadWorker();
+		String line;
 
 		new Thread( replReader ).start();
 
-		while ( !"exit".equals( line = reader.readLine() ) ) {
+		while ( !"exit".equals( line = scanner.nextLine() ) ) {
 
 			try {
 				switch ( line ) {
@@ -43,18 +40,18 @@ public class ReplJavaCommandConsole {
 						continue;
 					case "log level":
 						System.out.println( "set level?" );
-						Log.setLogLevelFromArgs( new String[] { reader.readLine() } );
+						Log.setLogLevelFromArgs( new String[] { scanner.nextLine() } );
 						System.out.print( ">>>" );
 						continue;
 					case "esc":
 						conn.write( new byte[] { 03 } );
 						continue;
 					default:
-						conn.write( (line+"\r\n").getBytes() );
+						conn.write( ( line + "\r\n" ).getBytes() );
 				}
 			} catch ( Exception e ) {
 
-				Log.log( String.valueOf( e ), LogLevel.ERROR );
+				Log.log( e, LogLevel.ERROR );
 			}
 		}
 
@@ -76,9 +73,12 @@ public class ReplJavaCommandConsole {
 					if ( !waiting && ( dat = conn.read() ) != -1 ) {
 
 						System.out.print( (char) dat );
+					} else {
+
+						Thread.sleep( 20 );
 					}
 				}
-			} catch ( IOException e ) {
+			} catch ( Exception e ) {
 
 				Log.log( e, LogLevel.ERROR );
 			}

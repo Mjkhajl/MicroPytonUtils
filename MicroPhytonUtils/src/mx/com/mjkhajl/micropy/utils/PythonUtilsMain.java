@@ -1,6 +1,7 @@
 package mx.com.mjkhajl.micropy.utils;
 
 import java.io.IOException;
+import java.util.Arrays;
 
 import mx.com.mjkhajl.micropy.comms.Connection;
 import mx.com.mjkhajl.micropy.comms.ReplHelper;
@@ -15,6 +16,7 @@ import mx.com.mjkhajl.micropy.filesys.vo.FileItem.Nature;
 import mx.com.mjkhajl.micropy.utils.Log.LogLevel;
 import mx.com.mjkhajl.micropy.utils.cmddoc.CommandLineUtils;
 import mx.com.mjkhajl.micropy.utils.cmddoc.CommandlineMethod;
+import mx.com.mjkhajl.micropy.utils.ui.JFrameConsoleWindow;
 
 public class PythonUtilsMain {
 
@@ -99,6 +101,12 @@ public class PythonUtilsMain {
 				sync = buildSynchronizer( buildRepl( conn ) );
 
 				ReplJavaCommandConsole console = new ReplJavaCommandConsole( conn, sync );
+
+				if ( Arrays.binarySearch( args, "window" ) != -1 ) {
+
+					Log.log( "starting console window..." );
+					new JFrameConsoleWindow();
+				}
 
 				console.start( new FileItem( args[1], Nature.LOCAL ), new FileItem( args[2], Nature.REMOTE ) );
 				return;
