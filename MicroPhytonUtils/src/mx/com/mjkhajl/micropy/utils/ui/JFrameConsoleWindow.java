@@ -160,6 +160,10 @@ public class JFrameConsoleWindow extends JFrame implements KeyListener, ActionLi
 				String command = content.substring( outStream.getLimit() );
 				inStream.write( command );
 				addHistory( command );
+				break;
+			case KeyEvent.VK_BEGIN:
+				textArea.setCaretPosition( outStream.getLimit() );
+				break;
 		}
 	}
 
@@ -174,6 +178,8 @@ public class JFrameConsoleWindow extends JFrame implements KeyListener, ActionLi
 				if ( textArea.getCaretPosition() > outStream.getLimit() ) {
 					break;
 				}
+			case KeyEvent.VK_BEGIN:
+			case KeyEvent.VK_HOME:
 				textArea.setCaretPosition( outStream.getLimit() );
 				e.consume();
 				break;
