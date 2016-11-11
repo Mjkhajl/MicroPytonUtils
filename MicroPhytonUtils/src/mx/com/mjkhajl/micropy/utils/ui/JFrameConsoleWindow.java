@@ -1,30 +1,66 @@
 package mx.com.mjkhajl.micropy.utils.ui;
 
 import java.awt.Color;
+import java.awt.FileDialog;
 import java.awt.Font;
+import java.awt.event.ActionEvent;
+import java.awt.event.ActionListener;
 import java.awt.event.KeyEvent;
 import java.awt.event.KeyListener;
-import java.awt.event.MouseEvent;
-import java.awt.event.MouseListener;
+import java.io.File;
+import java.io.IOException;
 import java.io.PrintStream;
 import java.util.LinkedList;
 
 import javax.swing.JFrame;
+import javax.swing.JMenu;
+import javax.swing.JMenuBar;
+import javax.swing.JMenuItem;
 import javax.swing.JScrollPane;
 import javax.swing.JTextArea;
+import javax.swing.KeyStroke;
+import javax.swing.UIManager;
 import javax.swing.UnsupportedLookAndFeelException;
 
-public class JFrameConsoleWindow extends JFrame implements KeyListener, MouseListener {
+import mx.com.mjkhajl.micropy.comms.ReplJavaCommandConsole;
 
-	private static final long			serialVersionUID	= 1L;
-	private WritableInputStream			inStream;
-	private JTextAreaOutputStream		outStream;
-	private final JTextArea				textArea;
-	private final LinkedList<String>	history				= new LinkedList<>();
-	private int							historyIndex		= -1;
-	private static final PrintStream	OUT					= System.out;
+public class JFrameConsoleWindow extends JFrame implements KeyListener, ActionListener {
 
-	public JFrameConsoleWindow() throws UnsupportedLookAndFeelException {
+	private static final long				serialVersionUID	= 1L;
+	private WritableInputStream				inStream;
+	private JTextAreaOutputStream			outStream;
+	private final JTextArea					textArea;
+	private final LinkedList<String>		history				= new LinkedList<>();
+	private int								historyIndex		= -1;
+	private static final PrintStream		OUT					= System.out;
+	private final FileDialog				fileDialog;
+	private final JMenuItem					runMenu, setMenu;
+	private File							scriptFile;
+	private final ReplJavaCommandConsole	console;
+
+	public JFrameConsoleWindow( ReplJavaCommandConsole console ) throws UnsupportedLookAndFeelException, ClassNotFoundException, InstantiationException, IllegalAccessException, IOException {
+
+		this.console = console;
+
+		UIManager.setLookAndFeel( UIManager.getSystemLookAndFeelClassName() );
+
+		fileDialog = new FileDialog( this, "Select a file", FileDialog.LOAD );
+		fileDialog.setDirectory( new File( "." ).getCanonicalPath() );
+
+		JMenuBar menuBar = new JMenuBar();
+		JMenu scriptMenu = new JMenu( "Script" );
+
+		runMenu = new JMenuItem( "run!!" );
+		setMenu = new JMenuItem( "set..." );
+		runMenu.setEnabled( false );
+		runMenu.addActionListener( this );
+		setMenu.addActionListener( this );
+		runMenu.setAccelerator( KeyStroke.getKeyStroke( KeyEvent.VK_R, ActionEvent.ALT_MASK ) );
+		setMenu.setAccelerator( KeyStroke.getKeyStroke( KeyEvent.VK_S, ActionEvent.ALT_MASK ) );
+
+		scriptMenu.add( runMenu );
+		scriptMenu.add( setMenu );
+		menuBar.add( scriptMenu );
 
 		textArea = new JTextArea();
 		textArea.setFont( new Font( Font.MONOSPACED, Font.PLAIN, 12 ) );
@@ -32,16 +68,14 @@ public class JFrameConsoleWindow extends JFrame implements KeyListener, MouseLis
 		textArea.setForeground( new Color( 230, 230, 240 ) );
 		textArea.setCaretColor( new Color( 230, 230, 240 ) );
 		textArea.addKeyListener( this );
-		this.addMouseListener( this );
 
 		inStream = new WritableInputStream();
 		outStream = new JTextAreaOutputStream( textArea, OUT );
 
-		PrintStream outPstream = new PrintStream( outStream );
-		
-		System.setOut( new PrintStream( outStream ) );
+		System.setOut( new PrintStream( new PrintStream( outStream ) ) );
 		System.setIn( inStream );
 
+		setJMenuBar( menuBar );
 		setDefaultCloseOperation( EXIT_ON_CLOSE );
 		getContentPane().add( new JScrollPane( textArea ) );
 		pack();
@@ -49,27 +83,16 @@ public class JFrameConsoleWindow extends JFrame implements KeyListener, MouseLis
 		setSize( 800, 600 );
 	}
 
-	@Override
-	public void keyTyped( KeyEvent e ) {
-
-		switch ( e.getKeyChar() ) {
-
-			case KeyEvent.VK_ENTER:
-				String content = textArea.getText();
-				String command = content.substring( outStream.getLimit() );
-				inStream.write( command );
-				addHistory( command );
-
-		}
-	}
-
 	private void addHistory( String command ) {
 
 		command = command.replaceAll( "[\r\n]", "" );
 
-		OUT.println( "Command: '" + command + "'" );
-		history.addFirst( command );
-		historyIndex = -1;
+		if ( !command.isEmpty() ) {
+
+			OUT.println( "Command: '" + command + "'" );
+			history.addFirst( command );
+			historyIndex = -1;
+		}
 	}
 
 	private String getNextHistory() {
@@ -110,6 +133,37 @@ public class JFrameConsoleWindow extends JFrame implements KeyListener, MouseLis
 	}
 
 	@Override
+	public void actionPerformed( ActionEvent e ) {
+
+		OUT.println( e );
+
+		switch ( e.getActionCommand() ) {
+
+			case "run!!":
+				console.runScriptFile( scriptFile );
+				break;
+			case "set...":
+				fileDialog.setVisible( true );
+				scriptFile = fileDialog.getFiles()[0];
+				runMenu.setEnabled( true );
+				break;
+		}
+	}
+
+	@Override
+	public void keyTyped( KeyEvent e ) {
+
+		switch ( e.getKeyChar() ) {
+
+			case KeyEvent.VK_ENTER:
+				String content = textArea.getText();
+				String command = content.substring( outStream.getLimit() );
+				inStream.write( command );
+				addHistory( command );
+		}
+	}
+
+	@Override
 	public void keyPressed( KeyEvent e ) {
 
 		switch ( e.getKeyCode() ) {
@@ -133,6 +187,8 @@ public class JFrameConsoleWindow extends JFrame implements KeyListener, MouseLis
 				replaceCommand( getNextHistory() );
 				e.consume();
 				break;
+			case KeyEvent.VK_ENTER:
+				textArea.setCaretPosition( textArea.getText().length() );
 			default:
 				if ( textArea.getCaretPosition() < outStream.getLimit() ) {
 					textArea.setCaretPosition( textArea.getText().length() );
@@ -142,26 +198,5 @@ public class JFrameConsoleWindow extends JFrame implements KeyListener, MouseLis
 
 	@Override
 	public void keyReleased( KeyEvent e ) {
-	}
-
-	@Override
-	public void mouseClicked( MouseEvent e ) {
-	}
-
-	@Override
-	public void mousePressed( MouseEvent e ) {
-	}
-
-	@Override
-	public void mouseReleased( MouseEvent e ) {
-		textArea.setCaretPosition( textArea.getDocument().getLength() );
-	}
-
-	@Override
-	public void mouseEntered( MouseEvent e ) {
-	}
-
-	@Override
-	public void mouseExited( MouseEvent e ) {
 	}
 }

@@ -28,7 +28,7 @@ public class ESP8266FileSystemInterface implements FileSystemInterface {
 
 		this.repl = repl;
 
-		repl.sendCommand( "import os" );
+		repl.sendCommandIgnoreErrors( "import os" );
 	}
 
 	@Override

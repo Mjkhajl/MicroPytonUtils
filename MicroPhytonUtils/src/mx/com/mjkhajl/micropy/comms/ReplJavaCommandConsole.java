@@ -1,10 +1,16 @@
 package mx.com.mjkhajl.micropy.comms;
 
+import java.io.BufferedReader;
+import java.io.File;
+import java.io.FileReader;
 import java.io.IOException;
+import java.util.LinkedList;
+import java.util.List;
 import java.util.Scanner;
 
 import mx.com.mjkhajl.micropy.filesys.FileSystemSynchronizer;
 import mx.com.mjkhajl.micropy.filesys.vo.FileItem;
+import mx.com.mjkhajl.micropy.utils.CodeUtils;
 import mx.com.mjkhajl.micropy.utils.Log;
 import mx.com.mjkhajl.micropy.utils.Log.LogLevel;
 
@@ -12,11 +18,14 @@ public class ReplJavaCommandConsole {
 
 	private final Connection				conn;
 	private final FileSystemSynchronizer	sync;
+	private final ReplHelper				repl;
+	private boolean							readerEnabled;
 
-	public ReplJavaCommandConsole( Connection conn, FileSystemSynchronizer sync ) {
+	public ReplJavaCommandConsole( FileSystemSynchronizer sync, ReplHelper repl, Connection conn ) {
 
 		this.conn = conn;
 		this.sync = sync;
+		this.repl = repl;
 	}
 
 	public void start( FileItem src, FileItem dest ) throws IOException {
@@ -24,6 +33,9 @@ public class ReplJavaCommandConsole {
 		Scanner scanner = new Scanner( System.in );
 		ReadWorker replReader = new ReadWorker();
 		String line;
+		readerEnabled = true;
+
+		Log.log( "Welcome to micropython!!!" );
 
 		new Thread( replReader ).start();
 
@@ -33,10 +45,10 @@ public class ReplJavaCommandConsole {
 				switch ( line ) {
 
 					case "java sync":
-						replReader.setWaiting( true );
+						readerEnabled = false;
 						sync.synchronizeDir( src, dest );
 						System.out.print( ">>>" );
-						replReader.setWaiting( false );
+						readerEnabled = true;
 						continue;
 					case "log level":
 						System.out.println( "set level?" );
@@ -52,15 +64,64 @@ public class ReplJavaCommandConsole {
 			} catch ( Exception e ) {
 
 				Log.log( e, LogLevel.ERROR );
+				readerEnabled = true;
 			}
 		}
+		scanner.close();
 
 		Log.log( "console closed...", LogLevel.INFO );
 	}
 
-	class ReadWorker implements Runnable {
+	public void runScriptFile( File file ) {
 
-		private boolean waiting = false;
+		System.out.println( "running script: " + file.getAbsolutePath() );
+
+		readerEnabled = false;
+		BufferedReader reader = null;
+		List<String> errors = new LinkedList<String>();
+		try {
+
+			reader = new BufferedReader( new FileReader( file ) );
+			String line;
+
+			while ( ( line = reader.readLine() ) != null ) {
+
+				if ( !line.isEmpty() ) {
+					System.out.println( line );
+					try {
+						System.out.println( repl.sendCommand( line ) );
+					} catch ( Exception e ) {
+						errors.add( String.valueOf( e ) );
+						e.printStackTrace();
+					}
+				}
+			}
+
+		} catch ( Exception e ) {
+
+			System.out.println( e );
+		} finally {
+
+			CodeUtils.close( reader );
+		}
+
+		readerEnabled = true;
+
+		if ( errors.isEmpty() ) {
+
+			System.out.println( "Script executed succesfully!!" );
+		} else {
+
+			System.out.println( "Script executed with following errors:" );
+
+			for ( String error : errors ) {
+
+				System.out.println( "\t" + error );
+			}
+		}
+	}
+
+	class ReadWorker implements Runnable {
 
 		@Override
 		public void run() {
@@ -70,7 +131,7 @@ public class ReplJavaCommandConsole {
 				int dat = 0;
 				while ( true ) {
 
-					if ( !waiting && ( dat = conn.read() ) != -1 ) {
+					if ( readerEnabled && ( dat = conn.read() ) != -1 ) {
 
 						System.out.print( (char) dat );
 					} else {
@@ -82,10 +143,6 @@ public class ReplJavaCommandConsole {
 
 				Log.log( e, LogLevel.ERROR );
 			}
-		}
-
-		public void setWaiting( boolean waiting ) {
-			this.waiting = waiting;
 		}
 	}
 }

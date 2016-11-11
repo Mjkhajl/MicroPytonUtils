@@ -94,18 +94,21 @@ public class PythonUtilsMain {
 
 			FileSystemSynchronizer sync = null;
 			Connection conn = null;
-
+			ReplHelper repl = null;
+			ReplJavaCommandConsole console;
+			
 			try {
 
 				conn = buildConection();
-				sync = buildSynchronizer( buildRepl( conn ) );
+				repl = buildRepl( conn );
+				sync = buildSynchronizer( repl );
 
-				ReplJavaCommandConsole console = new ReplJavaCommandConsole( conn, sync );
-
+				console = new ReplJavaCommandConsole( sync, repl, conn );
+				
 				if ( Arrays.binarySearch( args, "window" ) != -1 ) {
 
 					Log.log( "starting console window..." );
-					new JFrameConsoleWindow();
+					new JFrameConsoleWindow( console );
 				}
 
 				console.start( new FileItem( args[1], Nature.LOCAL ), new FileItem( args[2], Nature.REMOTE ) );
@@ -115,7 +118,7 @@ public class PythonUtilsMain {
 				e.printStackTrace();
 			} finally {
 
-				CodeUtils.close( sync, conn );
+				CodeUtils.close( sync, repl, conn );
 			}
 		}
 
