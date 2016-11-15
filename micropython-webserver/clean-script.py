@@ -1,10 +1,13 @@
 del server, sys.modules['webserver.server'], sys.modules['webserver']
 
 gc.collect()
-gc.mem_free()
+aft = gc.mem_free()
+aft
 
 import webserver.server as server
 
-server = server.Server( 8080 )
 gc.collect()
-gc.mem_free()
+curr = gc.mem_free()
+curr
+aft - curr
+del aft, curr

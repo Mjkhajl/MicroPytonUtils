@@ -1,14 +1,19 @@
+import gc
 from network import WLAN
-from ure import compile
 from socket import socket, AF_INET, SOCK_STREAM, getaddrinfo
+from ure import compile
 from sys import print_exception
+
+def start( port ):
+    server = Server( port )
+    server.start()
 
 class Server:
 
     def __init__( self, port ):
-        self.port = port
         self.host = WLAN().ifconfig()[0]
-        self.version = "0.02_12";
+        self.port = port
+        self.version = "0.02_32_led";
 
     def start( self ):
         print( "(v.", self.version, ") starting...", self.host, ":", self.port )
@@ -19,41 +24,44 @@ class Server:
             while True:
                 c_sock, c_addr = sock.accept()
                 try:
-                    req_processor.process( self.parseRequest(c_sock, c_addr) )
+                    res = req_processor.process( self.parseRequest( c_sock, c_addr ) )
+                    res["headers"].append( "Content-Length: " + str( len( res["body"] ) ) )
+                    response = bytes( "HTTP/1.0 {0} {1}\n{2}\n\n{3}\n\n".format( res["code"], res["message"], '\n'.join( res["headers"] ), res["body"] ), "utf-8" )
+                    print( response )
+                    c_sock.send( response )
+                    if res["ex"]: raise res["ex"]
                 except Exception as e:
                     print_exception( e )
                 finally:
                     c_sock.close();
+                    gc.collect();
+                    print( "------", gc.mem_free() )
         finally:
             if sock: sock.close();
             print( "good bye!" )
 
     def parseRequest( self, c_sock, c_addr ):
         line = c_sock.readline()
-        if line is not None:
-            method, path, version = line.decode().strip( '\n' ).split( ' ' )
-            headers = {}
-            while self.parseHeader( c_sock, headers ):
-                continue
-            return HttpRequest( method, path, version, headers, "", c_sock, c_addr )
-
-    def parseHeader( self, c_sock, headers ):
-        line = c_sock.readline()
-        if line is not None:
-            idx = line.decode().find( ':' )
-            if idx >= 0:
-                headers[line[:idx]] = line[idx + 1:]
-                return True
-        return False
-
-class HttpRequest:
-    def __init__( self, method, path, version, headers, content, c_sock, c_addr ):
-        ( self.method, self.path, self.version, self.headers, self.content, self.c_sock, self.c_addr ) = ( method, path, version, headers, content, c_sock, c_addr )
-        print( "'".join( ["method: ", method, " path: ", path, " version: ", version, " headers: ", str( headers ), " content: ", content, " addr: ", str( c_addr )] ) + '\n' +  str(c_sock) )
+        req = { "headers": {}, "c_sock": c_sock, "c_addr": c_addr, "method": None, "params":{} }
+        while line:
+            line = line.decode().strip( '\n\r' )
+            print( line )
+            if len( line ) == 0:
+                break;
+            if req["method"]:
+                header = line.split( ':' )
+                req["headers"][header[0]] = header[1]
+            else:
+                req["method"], req["path"], req["version"] = line.split( ' ' )
+                if req["path"].find('?') != -1 :
+                    req["path"], params = req["path"].split('?')
+                    for param in params.split("&"):
+                        name,val = param.split('=')
+                        req["params"][name]=val
+            line = c_sock.readline()
+        return req
 
 class GenericRequestProcessor:
-
-    RESPONSE = "HTTP/1.0 {0} {1}\n{2}\n\n{3}\n\n"
 
     def __init__( self ):
         self.handlers = []
@@ -64,30 +72,34 @@ class GenericRequestProcessor:
             return f
         return gethandler;
 
-    def process( self, request ):
-        ex = None
-        res_headers=[]
-        try:
-            for pattern, handler in self.handlers:
-                if pattern.match( request.path ):
-                    res_code, res_message, body = handler( request, res_headers )
-                    break
-        except Exception as e:
-            ex = e
-            res_code, res_message, body = 500, "Server Error", "Resource: " + str( request.path ) + "\nError: " + str( e );
-        res_headers.append( "Content-Length: " + str( len( body ) ) )
-        response = bytes( GenericRequestProcessor.RESPONSE.format( res_code, res_message, '\n'.join( res_headers ), body ), "utf-8" )
-        print( response )
-        request.c_sock.send( response )
-        if ex: raise ex;
+    def process( self, req ):
+        if req:
+            print( req )
+            res = { "headers" : [], "code": 200, "message":"OK", "ex": None }
+            try:
+                for pattern, handler in self.handlers:
+                    if pattern.match( req["path"] ):
+                        handler( req, res );
+                        break;
+            except Exception as e:
+                res["code"], res["message"], res["body"], res["ex"] = 500, "Server Error", "Request: " + str( req ) + "\nError: " + str( e ), e
+            return res;
 
 req_processor = GenericRequestProcessor()
 
 @req_processor.register( "." )
-def default_handler( request, res_headers ):
-    return ( 404, "Not Found", "Micropython server\nResource: {0}\nMethod: {1}\nNot Found!!!".format( request.path, request.method ) )
+def default_handler( request, response ):
+    response["code"], response["message"] = 404, "Not Found"
+    response["body"] = "Micropython server\nResource: {0}\nMethod: {1}\nNot Found!!!".format( request["path"], request["method"] )
 
 @req_processor.register( "/algo" )
-def algo_handler( request, res_headers ):
-    res_headers.append( "Content-Type: text/html" );
-    return ( 200, "OK", "<html><body><h3>Resource: {0}\nMethod: {1}\nWas Found!!!<h3></html>".format( request.path, request.method ) )
+def algo_handler( request, response ):
+    response["headers"].append( "Content-Type: text/html" );
+    response["body"] = "<html><body><h3>Resource: {0}\nMethod: {1}\nWas Found!!!<h3></html>".format( request["path"], request["method"] )
+
+@req_processor.register( "/led" )
+def led_handler( request, response ):
+    from machine import Pin
+    pin = Pin( 5, Pin.OUT )
+    pin.value( request["params"]["value"] == "on" )
+    response["body"] = "Led is turned " + request["params"]["value"]
