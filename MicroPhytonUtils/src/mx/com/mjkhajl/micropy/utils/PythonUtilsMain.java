@@ -140,7 +140,7 @@ public class PythonUtilsMain {
 
 	private ReplHelper buildRepl( Connection conn ) throws IOException, Exception {
 
-		final int maxReplLineSize = 280;
+		final int maxReplLineSize = 300;
 
 		return new ReplHelper( maxReplLineSize, conn );
 	}
