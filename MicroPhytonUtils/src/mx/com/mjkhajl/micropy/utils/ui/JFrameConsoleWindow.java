@@ -141,6 +141,7 @@ public class JFrameConsoleWindow extends JFrame implements KeyListener, ActionLi
 
 			case "run!!":
 				console.runScriptFile( scriptFile );
+				textArea.requestFocus();
 				break;
 			case "set...":
 				fileDialog.setVisible( true );

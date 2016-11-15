@@ -121,19 +121,22 @@ public class ReplHelper implements Closeable {
 
 		while ( !replyMatchesEnd( buffer, length ) ) {
 			int data = conn.read();
+		
 			if ( data != -1 ) {
+			
+				times = 0;
 				if ( length >= buffer.length ) {
 					// grow the buffer if it is full....
 					buffer = Arrays.copyOf( buffer, buffer.length + READ_BUFFER_SIZE );
 				}
 				buffer[length++] = (byte) data;
 			}
-			else if( times++ > 100000 ){
+			else if( times++ >= 2 ){
 				
 				throw new RuntimeException("too many blank data!! WTF!!");
 			}
 		}
-
+		
 		return new String( Arrays.copyOf( buffer, length ) );
 	}
 

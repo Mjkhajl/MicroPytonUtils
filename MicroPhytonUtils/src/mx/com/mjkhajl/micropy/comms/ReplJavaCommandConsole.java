@@ -4,9 +4,9 @@ import java.io.BufferedReader;
 import java.io.File;
 import java.io.FileReader;
 import java.io.IOException;
+import java.io.InputStreamReader;
 import java.util.LinkedList;
 import java.util.List;
-import java.util.Scanner;
 
 import mx.com.mjkhajl.micropy.filesys.FileSystemSynchronizer;
 import mx.com.mjkhajl.micropy.filesys.vo.FileItem;
@@ -19,7 +19,7 @@ public class ReplJavaCommandConsole {
 	private final Connection				conn;
 	private final FileSystemSynchronizer	sync;
 	private final ReplHelper				repl;
-	private boolean							readerEnabled;
+	private boolean							readerEnabled	= false;
 
 	public ReplJavaCommandConsole( FileSystemSynchronizer sync, ReplHelper repl, Connection conn ) {
 
@@ -30,16 +30,17 @@ public class ReplJavaCommandConsole {
 
 	public void start( FileItem src, FileItem dest ) throws IOException {
 
-		Scanner scanner = new Scanner( System.in );
+		BufferedReader reader = new BufferedReader( new InputStreamReader( System.in ) );
 		ReadWorker replReader = new ReadWorker();
 		String line;
-		readerEnabled = true;
 
 		Log.log( "Welcome to micropython!!!" );
 
 		new Thread( replReader ).start();
 
-		while ( !"exit".equals( line = scanner.nextLine() ) ) {
+		readerEnabled = true;
+		
+		while ( !"exit".equals( line = reader.readLine() ) ) {
 
 			try {
 				switch ( line ) {
@@ -51,9 +52,11 @@ public class ReplJavaCommandConsole {
 						readerEnabled = true;
 						continue;
 					case "log level":
+						readerEnabled = false;
 						System.out.println( "set level?" );
-						Log.setLogLevelFromArgs( new String[] { scanner.nextLine() } );
+						Log.setLogLevelFromArgs( new String[] { reader.readLine() } );
 						System.out.print( ">>>" );
+						readerEnabled = true;
 						continue;
 					case "esc":
 						conn.write( new byte[] { 03 } );
@@ -67,7 +70,6 @@ public class ReplJavaCommandConsole {
 				readerEnabled = true;
 			}
 		}
-		scanner.close();
 
 		Log.log( "console closed...", LogLevel.INFO );
 	}
@@ -105,8 +107,6 @@ public class ReplJavaCommandConsole {
 			CodeUtils.close( reader );
 		}
 
-		readerEnabled = true;
-
 		if ( errors.isEmpty() ) {
 
 			System.out.println( "Script executed succesfully!!" );
@@ -119,6 +119,8 @@ public class ReplJavaCommandConsole {
 				System.out.println( "\t" + error );
 			}
 		}
+		
+		readerEnabled = true;
 	}
 
 	class ReadWorker implements Runnable {
@@ -134,9 +136,6 @@ public class ReplJavaCommandConsole {
 					if ( readerEnabled && ( dat = conn.read() ) != -1 ) {
 
 						System.out.print( (char) dat );
-					} else {
-
-						Thread.sleep( 20 );
 					}
 				}
 			} catch ( Exception e ) {

@@ -105,7 +105,7 @@ public class PythonUtilsMain {
 
 				console = new ReplJavaCommandConsole( sync, repl, conn );
 				
-				if ( Arrays.binarySearch( args, "window" ) != -1 ) {
+				if ( Arrays.asList( args ).contains( "window" ) ) {
 
 					Log.log( "starting console window..." );
 					new JFrameConsoleWindow( console );
@@ -133,14 +133,14 @@ public class PythonUtilsMain {
 		final int dataBits = 8;
 		final int stopBits = 1;
 		final int parity = 0; // none see @javax.comm.SerialPort
-		final int timeout = 5000;
+		final int timeout = 500;
 
 		return new SerialCommConnection( bpsSpeed, dataBits, stopBits, parity, timeout );
 	}
 
 	private ReplHelper buildRepl( Connection conn ) throws IOException, Exception {
 
-		final int maxReplLineSize = 300;
+		final int maxReplLineSize = 280;
 
 		return new ReplHelper( maxReplLineSize, conn );
 	}

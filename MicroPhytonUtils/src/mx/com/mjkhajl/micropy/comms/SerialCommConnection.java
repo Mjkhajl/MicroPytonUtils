@@ -8,12 +8,14 @@ import java.util.Enumeration;
 import javax.comm.CommPortIdentifier;
 import javax.comm.NoSuchPortException;
 import javax.comm.SerialPort;
+import javax.comm.SerialPortEvent;
+import javax.comm.SerialPortEventListener;
 
 import mx.com.mjkhajl.micropy.utils.CodeUtils;
 import mx.com.mjkhajl.micropy.utils.Log;
 import mx.com.mjkhajl.micropy.utils.Log.LogLevel;
 
-public class SerialCommConnection implements Connection {
+public class SerialCommConnection implements Connection, SerialPortEventListener {
 
 	private SerialPort		port		= null;
 	private boolean			connected	= false;
@@ -112,6 +114,9 @@ public class SerialCommConnection implements Connection {
 				Log.log( "getInputBufferSize: " + port.getInputBufferSize(), LogLevel.DEBUG );
 				Log.log( "getOutputBufferSize: " + port.getOutputBufferSize(), LogLevel.DEBUG );
 
+				port.addEventListener( this );
+				port.notifyOnDataAvailable( true );
+
 				outStream = port.getOutputStream();
 				inStream = port.getInputStream();
 
@@ -130,26 +135,35 @@ public class SerialCommConnection implements Connection {
 	}
 
 	@Override
-	public void write( byte[] data ) throws IOException {
+	public synchronized void write( byte[] data ) throws IOException {
 
-		synchronized ( outStream ) {
-
-			outStream.write( data );
-			outStream.flush();
+		for ( byte b : data ) {
+			outStream.write( b );
 		}
+		outStream.flush();
 	}
 
 	@Override
-	public int read() throws IOException {
+	public synchronized int read() throws IOException {
 
-		synchronized ( inStream ) {
+		int data = inStream.read();
+		
+		if ( data == -1 ) {
 
-			return inStream.read();
-		}
+			try {
+
+				wait( timeout );
+				// read again...
+			} catch ( InterruptedException e ) {
+				e.printStackTrace();
+			}
+			data = inStream.read();
+		}		
+		return data;
 	}
 
 	@Override
-	public void close() throws IOException {
+	public synchronized void close() throws IOException {
 
 		if ( connected ) {
 
@@ -166,5 +180,13 @@ public class SerialCommConnection implements Connection {
 	public boolean isConnected() {
 
 		return connected;
+	}
+
+	@Override
+	public synchronized void serialEvent( SerialPortEvent event ) {
+
+		if ( event.getEventType() == SerialPortEvent.DATA_AVAILABLE ) {
+			notify();
+		}
 	}
 }
