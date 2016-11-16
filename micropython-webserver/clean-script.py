@@ -1,4 +1,5 @@
-del server, sys.modules['webserver.server'], sys.modules['webserver']
+del server
+sys.modules.clear()
 
 gc.collect()
 aft = gc.mem_free()
